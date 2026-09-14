@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PML Ch. 3.1–3.2 Interactive Study Lab</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#18202a;--muted:#667085;--accent:#5b5bd6;--good:#18864b;--bad:#c53b3b;--line:#dfe3ea}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{background:#171a2b;color:white;padding:32px 20px} .wrap{max-width:1100px;margin:auto} h1{margin:0 0 8px;font-size:30px} h2{margin-top:0} h3{margin-bottom:6px}.subtitle{color:#cbd0e5}
+nav{position:sticky;top:0;background:white;border-bottom:1px solid var(--line);z-index:5}.tabs{display:flex;gap:8px;overflow:auto;padding:10px 0}.tab{border:0;background:#eef0f6;padding:10px 14px;border-radius:9px;cursor:pointer;font-weight:650;white-space:nowrap}.tab.active{background:var(--accent);color:#fff}
+main{padding:24px 0 60px}.panel{display:none}.panel.active{display:block}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:14px 0;box-shadow:0 2px 7px #1018280a}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}.concept{border-left:4px solid var(--accent);padding-left:14px}
+button{font:inherit}.action{background:var(--accent);color:white;border:0;border-radius:9px;padding:10px 15px;cursor:pointer}.secondary{background:#eef0f6;color:var(--ink)} input[type=range]{width:100%}
+.math{font-family:Georgia,serif;font-size:21px;text-align:center;background:#f3f4f8;border-radius:10px;padding:14px;margin:12px 0}
+canvas{width:100%;height:350px;border:1px solid var(--line);border-radius:10px;background:white}.note{background:#fff7d6;border-left:4px solid #e0ae00;padding:12px 15px;border-radius:7px}.good{color:var(--good);font-weight:700}.bad{color:var(--bad);font-weight:700}
+.choice{display:block;text-align:left;width:100%;background:white;border:1px solid var(--line);padding:12px;border-radius:9px;margin:8px 0;cursor:pointer}.choice:hover{border-color:var(--accent)} .choice.correct{border-color:var(--good);background:#ecf9f1}.choice.wrong{border-color:var(--bad);background:#fff0f0}
+.feedback{min-height:28px;margin-top:8px;font-weight:600}.score{font-weight:750}.small{font-size:14px;color:var(--muted)} code{background:#eef0f6;padding:2px 5px;border-radius:4px}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid var(--line);padding:9px;text-align:left}th{background:#f1f2f6}
+@media(max-width:650px){h1{font-size:24px}.card{padding:15px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>Probabilistic Machine Learning: Ch. 3.1–3.2</h1>
+<div class="subtitle">Interactive study lab — joint distributions, covariance/correlation, independence, and multivariate Gaussians.</div>
+</div></header>
+<nav><div class="wrap tabs">
+<button class="tab active" onclick="showTab('learn',this)">Learn</button>
+<button class="tab" onclick="showTab('scatter',this)">Explore covariance</button>
+<button class="tab" onclick="showTab('gaussian',this)">Explore MVN</button>
+<button class="tab" onclick="showTab('quiz',this)">Quiz</button>
+<button class="tab" onclick="showTab('challenge',this)">Challenge</button>
+</div></nav>
+
+<main class="wrap">
+<section id="learn" class="panel active">
+<div class="card"><h2>1. The big picture</h2>
+<p>Section 3.1 moves from one random variable to <b>multiple random variables together</b>. The key object is a <b>joint distribution</b> such as <code>p(X,Y)</code>.</p>
+<div class="math">p(X,Y) → covariance/correlation → dependence structure</div>
+<p>Section 3.2 specializes this to the <b>multivariate Gaussian (MVN)</b>, which describes a Gaussian-shaped cloud in multiple dimensions.</p>
+<div class="grid">
+<div class="concept"><h3>Joint distribution</h3><p>Describes probabilities/densities for variables occurring together.</p></div>
+<div class="concept"><h3>Covariance</h3><p>Measures how two variables vary together. Sign gives direction; magnitude depends on units.</p></div>
+<div class="concept"><h3>Correlation</h3><p>Standardized covariance, always between −1 and +1.</p></div>
+<div class="concept"><h3>Independence</h3><p>Knowing one variable tells you nothing about the other: <code>p(X,Y)=p(X)p(Y)</code>.</p></div>
+</div></div>
+
+<div class="card"><h2>2. Covariance vs. correlation</h2>
+<div class="math">Cov(X,Y)=E[(X−μ<sub>X</sub>)(Y−μ<sub>Y</sub>)]</div>
+<div class="math">Corr(X,Y)=Cov(X,Y)/(σ<sub>X</sub>σ<sub>Y</sub>)</div>
+<p><b>Intuition:</b> imagine centered X and Y. If they tend to be above their means at the same time, covariance is positive. If one tends to be above while the other is below, it is negative.</p>
+<div class="note"><b>Important:</b> zero covariance does <i>not</i> generally imply independence. For jointly Gaussian variables, however, zero covariance <i>does</i> imply independence.</div></div>
+
+<div class="card"><h2>3. Multivariate Gaussian</h2>
+<div class="math">x ~ N(μ, Σ)</div>
+<p>Here <b>μ</b> is the mean vector and <b>Σ</b> is the covariance matrix. The covariance matrix controls the size, orientation, and shape of the Gaussian cloud.</p>
+<table><tr><th>Object</th><th>What it tells you</th></tr>
+<tr><td>μ</td><td>Center of the distribution</td></tr>
+<tr><td>Diagonal of Σ</td><td>Variances of individual dimensions</td></tr>
+<tr><td>Off-diagonal of Σ</td><td>Covariances between dimensions</td></tr>
+<tr><td>Σ⁻¹</td><td>Appears in the Mahalanobis distance</td></tr></table>
+<div class="math">d<sub>M</sub>(x)=√((x−μ)ᵀΣ⁻¹(x−μ))</div>
+<p>Unlike ordinary Euclidean distance, Mahalanobis distance accounts for the distribution's scale and correlation.</p></div>
+</section>
+
+<section id="scatter" class="panel">
+<div class="card"><h2>Explore covariance</h2><p>Drag the correlation slider. Watch the cloud rotate and change its relationship between X and Y.</p>
+<label><b>Correlation ρ:</b> <span id="rhoVal">0.00</span></label>
+<input id="rho" type="range" min="-0.95" max="0.95" step="0.01" value="0" oninput="drawScatter()">
+<canvas id="scatterCanvas" width="1000" height="600"></canvas>
+<p id="scatterExplain"></p>
+</div>
+<div class="card"><h3>What should you notice?</h3>
+<ul><li>Positive correlation → upward-sloping cloud.</li><li>Negative correlation → downward-sloping cloud.</li><li>Near zero correlation → no linear trend.</li><li>Correlation describes linear association, not causation.</li></ul>
+</div></section>
+
+<section id="gaussian" class="panel">
+<div class="card"><h2>Explore a 2D Gaussian</h2>
+<p>Change the covariance to see how the Gaussian cloud's shape changes.</p>
+<div class="grid">
+<div><label>σ<sub>X</sub> <span id="sxVal">1.0</span></label><input id="sx" type="range" min=".4" max="2.5" step=".1" value="1" oninput="drawGaussian()"></div>
+<div><label>σ<sub>Y</sub> <span id="syVal">1.0</span></label><input id="sy" type="range" min=".4" max="2.5" step=".1" value="1" oninput="drawGaussian()"></div>
+<div><label>ρ <span id="grhoVal">0.0</span></label><input id="grho" type="range" min="-.9" max=".9" step=".05" value="0" oninput="drawGaussian()"></div>
+</div>
+<canvas id="gaussianCanvas" width="1000" height="600"></canvas>
+<p class="small">The ellipses represent equal-density contours. More elongated ellipses indicate stronger dependence and/or unequal variance.</p>
+</div>
+<div class="card"><h3>Connect the parameters</h3>
+<p>For a 2D Gaussian with zero means:</p>
+<div class="math">Σ = [[σ<sub>X</sub>², ρσ<sub>X</sub>σ<sub>Y</sub>], [ρσ<sub>X</sub>σ<sub>Y</sub>, σ<sub>Y</sub>²]]</div>
+<p>Try setting ρ = 0. Then the axes align with X and Y. Try increasing |ρ| and observe the tilt.</p></div>
+</section>
+
+<section id="quiz" class="panel">
+<div class="card"><h2>Quick quiz</h2><p class="score">Score: <span id="score">0</span> / <span id="total">0</span></p>
+<div id="quizBox"></div><button class="action secondary" onclick="newQuiz()">New question</button></div>
+</section>
+
+<section id="challenge" class="panel">
+<div class="card"><h2>Challenge: diagnose the claim</h2>
+<p>A classmate says:</p><div class="note">“X and Y have covariance 0, so X and Y must be independent.”</div>
+<p>Is that statement always true?</p>
+<button class="choice" onclick="challenge(false,this)">Yes — covariance completely determines dependence.</button>
+<button class="choice" onclick="challenge(true,this)">No — zero covariance only rules out linear association; in general, variables can still be dependent.</button>
+<div id="challengeFeedback" class="feedback"></div></div>
+
+<div class="card"><h2>Mini derivation check</h2>
+<p>Suppose <code>X ~ N(0,1)</code> and define <code>Y = X²</code>. What do you expect?</p>
+<button class="choice" onclick="mini(true,this)">Cov(X,Y) = 0, but X and Y are dependent.</button>
+<button class="choice" onclick="mini(false,this)">Cov(X,Y) ≠ 0, so they are independent.</button>
+<div id="miniFeedback" class="feedback"></div>
+</div>
+</section>
+</main>
+
+<script>
+function showTab(id,btn){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');if(id==='scatter')drawScatter();if(id==='gaussian')drawGaussian();if(id==='quiz')newQuiz();}
+function randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function drawScatter(){
+ const c=document.getElementById('scatterCanvas'),ctx=c.getContext('2d'),rho=+document.getElementById('rho').value;
+ document.getElementById('rhoVal').textContent=rho.toFixed(2);ctx.clearRect(0,0,c.width,c.height);
+ ctx.strokeStyle='#ddd';ctx.beginPath();ctx.moveTo(500,30);ctx.lineTo(500,570);ctx.moveTo(30,300);ctx.lineTo(970,300);ctx.stroke();
+ ctx.fillStyle='#5b5bd6';
+ for(let i=0;i<500;i++){let x=randn(),y=rho*x+Math.sqrt(1-rho*rho)*randn();let px=500+x*150,py=300-y*130;ctx.beginPath();ctx.arc(px,py,3,0,7);ctx.fill();}
+ document.getElementById('scatterExplain').innerHTML=`<b>${rho>0.05?'Positive':rho<-.05?'Negative':'Near-zero'} correlation.</b> As ρ changes, the cloud becomes ${Math.abs(rho)>.7?'strongly':'more weakly'} linearly associated.`;
+}
+function drawGaussian(){
+ const c=document.getElementById('gaussianCanvas'),ctx=c.getContext('2d');
+ let sx=+document.getElementById('sx').value,sy=+document.getElementById('sy').value,r=+document.getElementById('grho').value;
+ document.getElementById('sxVal').textContent=sx.toFixed(1);document.getElementById('syVal').textContent=sy.toFixed(1);document.getElementById('grhoVal').textContent=r.toFixed(2);
+ ctx.clearRect(0,0,c.width,c.height);ctx.strokeStyle='#ddd';ctx.beginPath();ctx.moveTo(500,30);ctx.lineTo(500,570);ctx.moveTo(30,300);ctx.lineTo(970,300);ctx.stroke();
+ let a=sx*sx,b=r*sx*sy,d=sy*sy;let tr=a+d,det=a*d-b*b,disc=Math.sqrt(Math.max(0,tr*tr-4*det));
+ let l1=(tr+disc)/2,l2=(tr-disc)/2,ang=.5*Math.atan2(2*b,a-d);
+ ctx.save();ctx.translate(500,300);ctx.rotate(-ang);ctx.strokeStyle='#5b5bd6';
+ for(let k=1;k<=3;k++){ctx.beginPath();ctx.ellipse(0,0,Math.sqrt(l1)*k*90,Math.sqrt(l2)*k*90,0,0,2*Math.PI);ctx.stroke();}
+ ctx.restore();
+}
+const qs=[
+["Which statement is true?",["Covariance is always between −1 and 1.","Correlation is always between −1 and 1.","Zero covariance always means independence.","Covariance is unaffected by units."],1,"Correlation is standardized covariance, so it lies in [−1,1]."],
+["What does an off-diagonal entry of a covariance matrix represent?",["A variable's mean","A variable's variance","Covariance between two dimensions","The probability of the data"],2,"Off-diagonal entries describe pairwise covariance."],
+["For a jointly Gaussian pair, what does Cov(X,Y)=0 imply?",["Independence","Causation","Equal means","Equal variances"],0,"A special property of the multivariate Gaussian is that uncorrelated components are independent."],
+["What controls the center of an MVN distribution?",["Σ","Σ⁻¹","μ","ρ"],2,"μ is the mean vector and gives the center."],
+["Why use Mahalanobis distance?",["It ignores covariance.","It accounts for scale and correlation.","It is always smaller than Euclidean distance.","It only works in one dimension."],1,"Mahalanobis distance measures distance relative to the covariance structure."]
+];
+let used=[],score=0,total=0;
+function newQuiz(){let q=qs[Math.floor(Math.random()*qs.length)];let box=document.getElementById('quizBox');box.innerHTML='<h3>'+q[0]+'</h3>';q[1].forEach((x,i)=>{let b=document.createElement('button');b.className='choice';b.textContent=x;b.onclick=()=>answer(i,q[2],q[3],b);box.appendChild(b)});document.getElementById('total').textContent=total}
+function answer(i,correct,why,b){if(document.querySelector('#quizBox .correct,#quizBox .wrong'))return;total++;if(i===correct){score++;b.classList.add('correct');}else{b.classList.add('wrong');document.querySelectorAll('#quizBox .choice')[correct].classList.add('correct')}document.getElementById('score').textContent=score;document.getElementById('total').textContent=total;let p=document.createElement('p');p.className='feedback '+(i===correct?'good':'bad');p.textContent=(i===correct?'Correct! ':'Not quite. ')+why;document.getElementById('quizBox').appendChild(p)}
+function challenge(ok,b){document.querySelectorAll('#challenge .choice').forEach(x=>x.disabled=true);b.classList.add(ok?'correct':'wrong');document.getElementById('challengeFeedback').textContent=ok?'Exactly. Zero covariance does not generally imply independence.':'Not quite. Zero covariance does not generally imply independence.'}
+function mini(ok,b){document.querySelectorAll('#challenge .choice').forEach(x=>{});b.classList.add(ok?'correct':'wrong');document.getElementById('miniFeedback').textContent=ok?'Correct. Symmetry gives Cov(X,X²)=E[X³]=0 for a standard normal, but Y is completely determined by X, so they are dependent.':'Try thinking about the odd moment E[X³] and whether Y is determined by X.'}
+drawScatter();
+</script>
+</body>
+</html>
