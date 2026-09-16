@@ -45,15 +45,11 @@ h1 { font-size: clamp(48px, 6.4vw, 82px); line-height: 1.02; letter-spacing: -.0
 .quick-links { display: flex; gap: 22px; color: var(--muted); font-size: 13px; }
 .hero-card { position: relative; min-height: 390px; display: grid; place-items: center; }
 .orb { width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(155,140,255,.34), rgba(105,214,199,.08) 42%, transparent 68%); filter: blur(5px); }
-.code-card {
-  position: absolute; width: min(100%, 410px); padding: 22px; border: 1px solid var(--line);
-  border-radius: 14px; background: rgba(17,20,27,.92); box-shadow: 0 30px 80px rgba(0,0,0,.35);
-  transform: rotate(2deg);
+.profile-photo {
+  position: absolute; width: min(100%, 410px); aspect-ratio: 1 / 1;
+  object-fit: cover; border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.35); transform: rotate(2deg);
 }
-.dots { display: flex; gap: 6px; margin-bottom: 20px; }
-.dots i { width: 7px; height: 7px; border-radius: 50%; background: #555; }
-pre { margin: 0; font: 13px/2 "DM Mono", monospace; overflow: auto; }
-.purple { color: #b3a8ff; }.blue { color: #7cc9ff; }.green { color: #75d6a7; }
 .section { padding: 120px 0; }
 .section-alt { background: var(--surface); border-top: 1px solid rgba(255,255,255,.04); border-bottom: 1px solid rgba(255,255,255,.04); }
 .section-label { margin-bottom: 55px; }
