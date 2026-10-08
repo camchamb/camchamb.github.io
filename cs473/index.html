@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CS 473 Files</title>
+</head>
+<body>
+  <h1>CS 473 Files</h1>
+
+  <ul id="files">
+    <li>Loading...</li>
+  </ul>
+
+  <script>
+    // Change these three values
+    const OWNER = "camchamb";
+    const REPO = "camchamb.github.io";
+    const BRANCH = "main";
+
+    const folder = "cs473";
+
+    async function loadFiles() {
+      const response = await fetch(
+        `https://api.github.com/repos/${OWNER}/${REPO}/contents/${folder}?ref=${BRANCH}`
+      );
+
+      const items = await response.json();
+
+      const files = items
+        .filter(item => item.type === "file")
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      const list = document.getElementById("files");
+      list.innerHTML = "";
+
+      files.forEach(file => {
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+
+        link.href = file.download_url;
+        link.textContent = file.name;
+
+        li.appendChild(link);
+        list.appendChild(li);
+      });
+    }
+
+    loadFiles();
+  </script>
+</body>
+</html>
