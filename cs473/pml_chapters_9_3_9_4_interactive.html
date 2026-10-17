@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PML — Chapters 9.3–9.4 Interactive Guide</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#182235;--muted:#5d687b;--line:#dbe2ee;--blue:#3157c8;--blue2:#e9efff;--green:#16794b;--amber:#946200;--red:#a73535;--shadow:0 8px 26px #15294b0b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.58 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{background:linear-gradient(125deg,#14213d,#244b91);color:white;padding:34px 20px 30px}
+.hero,main{max-width:1050px;margin:auto}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:.78rem;font-weight:800;color:#b9cbff}
+h1{font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.1;margin:.45rem 0}.subtitle{max-width:780px;color:#e3eaff}
+main{padding:24px 16px 60px}.notice{background:#fff8e5;border:1px solid #f0d58b;padding:13px 16px;border-radius:12px;color:#5b4817;margin-bottom:18px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.tab{border:1px solid var(--line);border-radius:999px;padding:10px 15px;background:white;color:var(--ink);font-weight:750;cursor:pointer}.tab[aria-selected=true]{background:var(--blue);color:white;border-color:var(--blue)}
+.section{display:none}.section.active{display:block}.panel,.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin:14px 0;box-shadow:var(--shadow)}
+h2{font-size:1.65rem;margin:.1rem 0 .5rem}h3{font-size:1.12rem;margin:.2rem 0 .55rem}p{margin:.45rem 0 .8rem}.muted,.small{color:var(--muted)}.small{font-size:.9rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.callout{border-left:4px solid var(--blue);padding:10px 14px;background:#f0f4ff;border-radius:0 10px 10px 0;margin:12px 0}
+.formula{background:#111b2e;color:#f0f5ff;padding:14px 16px;border-radius:12px;overflow-x:auto;font:1rem/1.7 ui-monospace,SFMono-Regular,Consolas,monospace}
+button,.btn{font:inherit;cursor:pointer;border:1px solid #bdc8da;background:white;border-radius:9px;padding:8px 12px;color:var(--ink)}button:hover{border-color:var(--blue)}button.primary{background:var(--blue);color:white;border-color:var(--blue)}
+label{display:block;font-weight:650;margin:10px 0 4px}input[type=range]{width:100%;accent-color:var(--blue)}input[type=number]{width:90px;padding:7px;border:1px solid var(--line);border-radius:7px;font:inherit}
+.metric{font-size:1.5rem;font-weight:850;letter-spacing:-.03em}.metric-label{font-size:.82rem;color:var(--muted)}.bar{height:13px;border-radius:99px;background:#e8edf5;overflow:hidden}.bar>div{height:100%;background:var(--blue);width:50%;transition:width .2s}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}.feature{display:flex;align-items:center;gap:10px;justify-content:space-between;border-bottom:1px solid var(--line);padding:8px 0}.pill{font-size:.78rem;background:var(--blue2);color:#24449d;padding:3px 8px;border-radius:999px;font-weight:750}
+.quiz-q{padding:14px 0;border-bottom:1px solid var(--line)}.quiz-q:last-child{border:0}.answers{display:grid;gap:7px;margin-top:8px}.answers button{text-align:left}.answers button.correct{border-color:#83c7a4;background:#e8f8ef}.answers button.wrong{border-color:#e6a0a0;background:#fff0f0}.feedback{font-size:.9rem;margin-top:6px;min-height:1.3em}
+table{border-collapse:collapse;width:100%;margin:10px 0}th,td{text-align:left;border-bottom:1px solid var(--line);padding:9px;vertical-align:top}th{background:#f1f4fa}
+details{border:1px solid var(--line);border-radius:10px;padding:10px 13px;margin:9px 0}summary{font-weight:750;cursor:pointer}
+footer{color:var(--muted);font-size:.88rem;padding:20px 0}
+@media(max-width:650px){.split{grid-template-columns:1fr}.panel,.card{padding:15px}header{padding:27px 16px}}
+</style>
+</head>
+<body>
+<header><div class="hero">
+<div class="eyebrow">Interactive study guide · PML: An Introduction</div>
+<h1>Naive Bayes &amp; Generative vs. Discriminative Models</h1>
+<p class="subtitle">Chapters 9.3–9.4 · Learn the intuition first, then build a model, then connect the equations to statistical learning.</p>
+</div></header>
+<main>
+<div class="notice"><strong>How to use this guide:</strong> Start at Level 1, experiment with the controls, then move upward. This is an original learning aid for the topics—not a reproduction of the textbook.</div>
+<div class="tabs" role="tablist" aria-label="Learning levels">
+<button class="tab" role="tab" aria-selected="true" data-target="level1">1 · High-school intuition</button>
+<button class="tab" role="tab" aria-selected="false" data-target="level2">2 · Build the model</button>
+<button class="tab" role="tab" aria-selected="false" data-target="level3">3 · College mathematics</button>
+</div>
+
+<section id="level1" class="section active">
+<div class="panel">
+<h2>Level 1 — Learn the idea</h2>
+<p>Imagine an email arrives. Is it <strong>spam</strong> or <strong>not spam</strong>? You notice clues: the words “prize,” “meeting,” or “free.” A classifier combines clues and estimates which category is more likely.</p>
+<div class="grid">
+<div class="card"><h3>Naive Bayes</h3><p>It asks: “If this email were spam, how likely would these clues be? What if it were not spam?” It combines the clue probabilities with how common each category is.</p><div class="callout">“Naive” means it treats clues as conditionally independent once the class is known. That is a simplifying assumption—not a claim that words are truly unrelated.</div></div>
+<div class="card"><h3>Generative model</h3><p>Learn a story for each class: what spam emails tend to look like, and what normal emails tend to look like. Then use the story to classify a new email.</p></div>
+<div class="card"><h3>Discriminative model</h3><p>Learn the boundary or probability that separates the classes directly. Rather than modeling how each class generates the email, focus on predicting the label from the clues.</p></div>
+</div>
+<h3>A useful mental picture</h3>
+<div class="split">
+<div class="card"><div class="pill">Generative</div><p><strong>Class → features</strong></p><p class="muted">“What kinds of clues would a spam email produce?”</p><div class="formula">P(features, class)</div></div>
+<div class="card"><div class="pill">Discriminative</div><p><strong>Features → class</strong></p><p class="muted">“Given these clues, how likely is spam?”</p><div class="formula">P(class | features)</div></div>
+</div>
+</div>
+<div class="panel">
+<h3>Quick check</h3>
+<div class="quiz-q" data-answer="b"><strong>1. What makes Naive Bayes “naive”?</strong><div class="answers"><button data-choice="a">It ignores the class label.</button><button data-choice="b">It assumes features are conditionally independent given the class.</button><button data-choice="c">It never uses probabilities.</button></div><div class="feedback"></div></div>
+<div class="quiz-q" data-answer="a"><strong>2. Which question is most characteristic of a generative classifier?</strong><div class="answers"><button data-choice="a">How might features look if the class were spam?</button><button data-choice="b">Where should I draw a boundary without modeling the features?</button><button data-choice="c">Can I avoid training data entirely?</button></div><div class="feedback"></div></div>
+</div>
+</section>
+
+<section id="level2" class="section">
+<div class="panel">
+<h2>Level 2 — Build a Naive Bayes classifier</h2>
+<p>We will classify an email using two binary clues: it contains <em>“free”</em> and it contains <em>“link”</em>. The numbers below are illustrative probabilities. Move the sliders and see how the posterior changes.</p>
+<div class="grid">
+<div class="card">
+<h3>1. Choose the prior</h3>
+<label for="prior">P(Spam) = <span id="priorVal">30%</span></label><input id="prior" type="range" min="5" max="95" value="30">
+<p class="small">The prior is the spam rate before looking at this email.</p>
+<h3>2. How common are the clues?</h3>
+<label for="freeSpam">P(“free” | Spam) = <span id="freeSpamVal">70%</span></label><input id="freeSpam" type="range" min="1" max="99" value="70">
+<label for="freeHam">P(“free” | Not spam) = <span id="freeHamVal">10%</span></label><input id="freeHam" type="range" min="1" max="99" value="10">
+<label for="linkSpam">P(“link” | Spam) = <span id="linkSpamVal">80%</span></label><input id="linkSpam" type="range" min="1" max="99" value="80">
+<label for="linkHam">P(“link” | Not spam) = <span id="linkHamVal">25%</span></label><input id="linkHam" type="range" min="1" max="99" value="25">
+</div>
+<div class="card">
+<h3>3. Select the observed clues</h3>
+<label><input type="checkbox" id="hasFree" checked> Email contains “free”</label>
+<label><input type="checkbox" id="hasLink" checked> Email contains “link”</label>
+<p class="small">Uncheck a clue to see how the prediction changes when that evidence is absent. For this toy demo, “absent” uses the complementary probability.</p>
+<div class="callout">Naive Bayes multiplies the prior by the likelihood of each observed clue. The two class scores are then normalized into probabilities.</div>
+</div>
+</div>
+<div class="card">
+<h3>Posterior prediction</h3>
+<div class="split">
+<div><div class="metric" id="spamPost">—</div><div class="metric-label">P(Spam | observed clues)</div><div class="bar"><div id="spamBar"></div></div></div>
+<div><div class="metric" id="hamPost">—</div><div class="metric-label">P(Not spam | observed clues)</div><div class="bar"><div id="hamBar"></div></div></div>
+</div>
+<p id="prediction" class="callout" aria-live="polite"></p>
+<details><summary>Show the unnormalized scores</summary><p id="scores"></p><p class="small">Normalization divides each score by their sum. This makes the two posterior probabilities add to 1.</p></details>
+</div>
+</div>
+
+<div class="panel">
+<h2>Model fitting and smoothing</h2>
+<p>Naive Bayes learns probabilities from labeled examples. If a word never appears in a class in your training sample, its estimated probability may become zero. A single zero can wipe out the entire product score. <strong>Laplace smoothing</strong> prevents this by adding a small pseudo-count.</p>
+<div class="grid">
+<div class="card">
+<h3>Try a word-count example</h3>
+<p>Suppose the word “coupon” appears in <strong><span id="count">0</span></strong> of <strong>20</strong> spam training emails. Adjust the count and smoothing strength.</p>
+<label for="countRange">Observed count: <span id="countVal">0</span> / 20</label><input id="countRange" type="range" min="0" max="20" value="0">
+<label for="alpha">Pseudo-count α: <span id="alphaVal">1</span></label><input id="alpha" type="range" min="0" max="3" step=".5" value="1">
+<p class="small">Assume a binary feature: word appears / word does not appear.</p>
+</div>
+<div class="card">
+<h3>Estimated probability</h3>
+<div class="metric" id="smoothProb">—</div>
+<div class="formula">P(word) = (count + α) / (N + 2α)</div>
+<p id="smoothExplain" class="small"></p>
+</div>
+</div>
+</div>
+<div class="panel">
+<h3>Check your understanding</h3>
+<div class="quiz-q" data-answer="c"><strong>1. If one observed feature has probability zero under a class, what can happen without smoothing?</strong><div class="answers"><button data-choice="a">The class score always becomes larger.</button><button data-choice="b">The prior is automatically replaced.</button><button data-choice="c">The product score for that class becomes zero.</button></div><div class="feedback"></div></div>
+<div class="quiz-q" data-answer="a"><strong>2. What does Laplace smoothing do?</strong><div class="answers"><button data-choice="a">Adds pseudo-counts so unseen outcomes need not get probability zero.</button><button data-choice="b">Makes all features independent in reality.</button><button data-choice="c">Guarantees perfect classification.</button></div><div class="feedback"></div></div>
+</div>
+</section>
+
+<section id="level3" class="section">
+<div class="panel">
+<h2>Level 3 — College-level formulation</h2>
+<h3>Naive Bayes factorization</h3>
+<p>Let the feature vector be \(x=(x_1,\ldots,x_D)\) and class be \(y\in\{1,\ldots,K\}\). Bayes’ rule gives</p>
+<div class="formula">P(y | x) = P(y) P(x | y) / P(x)</div>
+<p>The naive conditional-independence assumption factorizes the class-conditional likelihood:</p>
+<div class="formula">P(x | y) ≈ ∏<sub>j=1</sub><sup>D</sup> P(x<sub>j</sub> | y)</div>
+<p>For classification, the denominator \(P(x)\) is the same for every candidate class, so the predicted class can be found by maximizing the unnormalized score:</p>
+<div class="formula">ŷ = argmax<sub>y</sub> P(y) ∏<sub>j=1</sub><sup>D</sup> P(x<sub>j</sub> | y)</div>
+<p>Products of many small probabilities can underflow numerically. Taking logs preserves the maximizing class and turns products into sums:</p>
+<div class="formula">ŷ = argmax<sub>y</sub> [ log P(y) + Σ<sub>j=1</sub><sup>D</sup> log P(x<sub>j</sub> | y) ]</div>
+<div class="callout"><strong>Important:</strong> Conditional independence is assumed <em>given the class</em>. Features can still be correlated overall. For example, “free” and “prize” may co-occur often in spam; naive Bayes may effectively count correlated evidence more than once.</div>
+</div>
+<div class="panel">
+<h3>Generative vs. discriminative: what is learned?</h3>
+<table><thead><tr><th>Question</th><th>Generative</th><th>Discriminative</th></tr></thead><tbody>
+<tr><td>Target</td><td>Joint distribution \(P(x,y)\), often via \(P(y)P(x|y)\)</td><td>Conditional distribution \(P(y|x)\) or a decision boundary</td></tr>
+<tr><td>Prediction</td><td>Use Bayes’ rule to infer \(y\)</td><td>Predict \(y\) directly from \(x\)</td></tr>
+<tr><td>Example</td><td>Naive Bayes; Gaussian discriminant analysis</td><td>Logistic regression; many neural classifiers</td></tr>
+<tr><td>Potential strengths</td><td>Can work well with limited data; can model feature distribution; can sometimes handle missing features naturally</td><td>Often focuses model capacity on the classification task; can outperform when enough labeled data is available and assumptions are appropriate</td></tr>
+<tr><td>Potential weaknesses</td><td>Wrong assumptions about \(P(x|y)\) can hurt predictions even if class boundary is what matters</td><td>Does not by itself specify how features are generated; missing features may require additional handling</td></tr>
+</tbody></table>
+<p>These are tendencies, not guarantees. Performance depends on the data, model assumptions, sample size, and evaluation goal.</p>
+</div>
+<div class="panel">
+<h3>Why Naive Bayes can resemble logistic regression</h3>
+<p>For binary classification, take the log posterior odds:</p>
+<div class="formula">log [P(y=1 | x) / P(y=0 | x)] = log [P(y=1)/P(y=0)] + Σ<sub>j</sub> log [P(x<sub>j</sub>|y=1) / P(x<sub>j</sub>|y=0)]</div>
+<p>For suitable feature distributions (such as Bernoulli features), each feature contributes an additive term. This can produce a linear function of the features in log-odds space, like logistic regression. The models are still trained differently: naive Bayes estimates class-conditional feature distributions; logistic regression directly optimizes a conditional prediction objective.</p>
+</div>
+<div class="panel">
+<h3>Missing features</h3>
+<p>If feature \(x_j\) is genuinely unobserved, a generative model can often marginalize it out:</p>
+<div class="formula">P(x<sub>observed</sub> | y) = ∫ P(x<sub>observed</sub>, x<sub>missing</sub> | y) dx<sub>missing</sub></div>
+<p>Under naive Bayes, if the missing feature is separate in the factorization, its likelihood factor can simply be omitted from the product. This is not equivalent to treating a missing value as zero. Missingness may itself carry information, and some feature models require more careful marginalization.</p>
+</div>
+<div class="panel">
+<h3>College-level quiz</h3>
+<div class="quiz-q" data-answer="b"><strong>1. Why can we omit \(P(x)\) when choosing the MAP class?</strong><div class="answers"><button data-choice="a">It is always equal to 1.</button><button data-choice="b">It is constant across candidate classes for fixed observed x.</button><button data-choice="c">It is the prior.</button></div><div class="feedback"></div></div>
+<div class="quiz-q" data-answer="c"><strong>2. Why use log probabilities in practice?</strong><div class="answers"><button data-choice="a">They make conditional independence true.</button><button data-choice="b">They always improve model accuracy.</button><button data-choice="c">They turn products into sums and reduce numerical underflow.</button></div><div class="feedback"></div></div>
+<div class="quiz-q" data-answer="a"><strong>3. Which statement is most accurate?</strong><div class="answers"><button data-choice="a">Naive Bayes models class-conditional feature distributions; logistic regression models class probabilities directly.</button><button data-choice="b">Both methods make exactly the same assumptions and optimize the same objective.</button><button data-choice="c">Discriminative models cannot output probabilities.</button></div><div class="feedback"></div></div>
+</div>
+</section>
+
+<footer>
+<p><strong>Chapter map:</strong> 9.3 Naive Bayes classifiers (example models, fitting, Bayesian Naive Bayes, connection to logistic regression); 9.4 Generative vs. discriminative classifiers (advantages and handling missing features).</p>
+<p>Study tip: after each level, explain aloud (1) what is assumed, (2) what is learned from data, and (3) how the class prediction is computed.</p>
+<p>Reference: Kevin P. Murphy, <em>Probabilistic Machine Learning: An Introduction</em>, Chapter 9. <a href="https://probml.github.io/book1" target="_blank" rel="noopener">Official book website</a>.</p>
+</footer>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{
+ document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b===btn)));
+ document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id===btn.dataset.target));
+}));
+function setupQuiz(){
+ document.querySelectorAll('.quiz-q').forEach(q=>{
+  const answer=q.dataset.answer, feedback=q.querySelector('.feedback');
+  q.querySelectorAll('button[data-choice]').forEach(b=>b.addEventListener('click',()=>{
+   q.querySelectorAll('button[data-choice]').forEach(x=>x.classList.remove('correct','wrong'));
+   const ok=b.dataset.choice===answer; b.classList.add(ok?'correct':'wrong');
+   feedback.textContent=ok?'Correct. '+({b:'That is the key idea.',a:'Exactly.',c:'Correct.'}[answer]||''): 'Not quite—try again and revisit the explanation above.';
+   feedback.style.color=ok?'#16794b':'#a73535';
+  }));
+ });
+}
+setupQuiz();
+const ids=['prior','freeSpam','freeHam','linkSpam','linkHam'];
+function pct(id){return Number($(id).value)/100}
+function updateBayes(){
+ ids.forEach(id=>$(id+'Val').textContent=$(id).value+'%');
+ const prior=pct('prior'), fs=pct('freeSpam'), fh=pct('freeHam'), ls=pct('linkSpam'), lh=pct('linkHam');
+ const f=$('hasFree').checked, l=$('hasLink').checked;
+ const spam=prior*(f?fs:1-fs)*(l?ls:1-ls);
+ const ham=(1-prior)*(f?fh:1-fh)*(l?lh:1-lh);
+ const total=spam+ham, ps=total?spam/total:0.5, ph=1-ps;
+ $('spamPost').textContent=(ps*100).toFixed(1)+'%'; $('hamPost').textContent=(ph*100).toFixed(1)+'%';
+ $('spamBar').style.width=(ps*100)+'%'; $('hamBar').style.width=(ph*100)+'%';
+ $('prediction').textContent=ps>=.5?'Prediction: SPAM is more likely under these settings.':'Prediction: NOT SPAM is more likely under these settings.';
+ $('scores').textContent='Spam score = '+spam.toFixed(6)+'; Not-spam score = '+ham.toFixed(6)+'; total = '+total.toFixed(6)+'. Posterior spam = spam score / total.';
+}
+ids.concat(['hasFree','hasLink']).forEach(id=>$(id).addEventListener('input',updateBayes));
+updateBayes();
+function updateSmooth(){
+ const c=Number($('countRange').value), a=Number($('alpha').value), n=20;
+ $('count').textContent=c; $('countVal').textContent=c; $('alphaVal').textContent=a;
+ const p=(c+a)/(n+2*a);
+ $('smoothProb').textContent=(p*100).toFixed(2)+'%';
+ $('smoothExplain').textContent=a===0?(c===0?'With α = 0 and no observed appearances, the estimate is zero.':'With α = 0, this is the raw frequency in the training sample.'):'Adding α pseudo-counts to both binary outcomes prevents the estimate from reaching 0 or 1. Here the estimate is ('+c+' + '+a+') / (20 + 2×'+a+') = '+p.toFixed(4)+'.';
+}
+$('countRange').addEventListener('input',updateSmooth); $('alpha').addEventListener('input',updateSmooth); updateSmooth();
+</script>
+</body>
+</html>
