@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Siamese & Triplet Networks — Interactive Learning Guide</title>
+<style>
+:root{--bg:#f5f7fb;--panel:#fff;--ink:#172033;--muted:#5d687d;--line:#dce3ef;--blue:#2855c5;--blue2:#eaf0ff;--green:#147d54;--greenbg:#e6f7ef;--red:#b93838;--redbg:#fff0ef;--gold:#8b5b00;--goldbg:#fff5d9}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:linear-gradient(120deg,#152b58,#2855c5);color:white;padding:36px 20px}
+header .wrap,main{max-width:1050px;margin:auto}h1{font-size:clamp(2rem,4vw,3rem);line-height:1.1;margin:0 0 12px}header p{max-width:780px;margin:0;color:#e6ecff}
+main{padding:22px 16px 60px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}.tab{border:1px solid var(--line);border-radius:999px;background:white;padding:9px 16px;cursor:pointer;font-weight:650;color:var(--ink)}.tab.active{background:var(--blue);border-color:var(--blue);color:white}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin:0 0 18px;box-shadow:0 5px 18px #192b4b0a}.level{display:none}.level.active{display:block}h2{font-size:1.55rem;margin:0 0 10px}h3{margin:20px 0 6px;font-size:1.12rem}p{margin:8px 0}.muted,.small{color:var(--muted)}.small{font-size:.92rem}.pill{display:inline-block;border-radius:7px;padding:2px 8px;background:var(--blue2);color:var(--blue);font-size:.82rem;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.mini{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fcfdff}.mini strong{display:block;margin-bottom:4px}
+.formula{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#f0f3fa;border-radius:10px;padding:13px;overflow:auto;margin:10px 0}.diagram{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:16px;background:#f7f9fe;border-radius:12px;margin:12px 0}.person{width:120px;text-align:center;padding:12px 8px;border-radius:12px;border:2px solid var(--line);background:white}.person .dot{width:34px;height:34px;border-radius:50%;margin:0 auto 8px}.arrow{font-size:1.5rem;color:var(--muted)}.blue{border-color:#3b6be0!important}.orange{border-color:#d88922!important}.green{border-color:#169b69!important}.red{border-color:#d64c4c!important}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:16px}.controls label{font-weight:650;display:block}.controls input[type=range]{width:100%}.metric{font-size:1.4rem;font-weight:800}.status{padding:10px 12px;border-radius:10px;background:var(--blue2);margin-top:10px}.good{background:var(--greenbg);color:#105e40}.bad{background:var(--redbg);color:#8c2525}.warn{background:var(--goldbg);color:#704900}
+button{font:inherit}.action{border:0;background:var(--blue);color:white;padding:10px 15px;border-radius:9px;font-weight:700;cursor:pointer}.secondary{border:1px solid var(--line);background:white;color:var(--ink);padding:9px 13px;border-radius:9px;cursor:pointer}.question{border-top:1px solid var(--line);padding:15px 0}.question:first-child{border-top:0}.answers{display:grid;gap:8px;margin-top:8px}.answers button{text-align:left;border:1px solid var(--line);background:white;padding:10px 12px;border-radius:9px;cursor:pointer}.answers button:hover{border-color:var(--blue)}.feedback{margin-top:8px;padding:10px;border-radius:8px;display:none}.feedback.show{display:block}.correct{background:var(--greenbg);color:#105e40}.incorrect{background:var(--redbg);color:#8c2525}
+svg{max-width:100%;height:auto}.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.9rem}.legend span:before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:var(--c)}
+details{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:9px 0}summary{cursor:pointer;font-weight:700}
+@media(max-width:600px){.controls{grid-template-columns:1fr}.panel{padding:16px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<div class="pill" style="background:#dce6ff;color:#173b94;margin-bottom:14px">INTERACTIVE STUDY GUIDE</div>
+<h1>Siamese & Triplet Networks</h1>
+<p>Build intuition for learning a useful embedding space: similar things should land close together, while dissimilar things should be separated. Explore the idea visually, adjust a triplet-loss example, and check your understanding.</p>
+</div></header>
+<main>
+<div class="tabs" role="tablist" aria-label="Learning level">
+<button class="tab active" data-level="easy">1 · Intuition</button><button class="tab" data-level="middle">2 · College level</button><button class="tab" data-level="deep">3 · Math & practice</button>
+</div>
+<section id="easy" class="level active">
+<div class="panel"><h2>1. The big idea: teach a model what “similar” means</h2>
+<p>Imagine a photo-search app. You upload a picture of your dog and want it to find other pictures of the same dog—not just pictures with the same background. A classifier predicts a label. A <b>metric-learning model</b> instead learns a representation (an <b>embedding</b>) where distance has meaning.</p>
+<div class="diagram">
+<div class="person blue"><div class="dot" style="background:#3b6be0"></div><b>Anchor</b><div class="small">query photo</div></div><div class="arrow">→</div>
+<div class="person green"><div class="dot" style="background:#169b69"></div><b>Positive</b><div class="small">same identity</div></div><div class="person red"><div class="dot" style="background:#d64c4c"></div><b>Negative</b><div class="small">different identity</div></div>
+</div>
+<p>The network converts each input into a vector of numbers. Training nudges the anchor and positive vectors closer, and pushes the anchor and negative vectors farther apart.</p>
+<div class="grid"><div class="mini"><strong>Siamese network</strong>Two (or more) branches use the same encoder weights. Compare the resulting embeddings for a pair.</div><div class="mini"><strong>Triplet network</strong>Three shared-weight branches process an anchor, a positive example, and a negative example.</div><div class="mini"><strong>Embedding</strong>A compact vector representing useful features. Distance between vectors is used as a similarity signal.</div></div>
+</div>
+<div class="panel"><h2>2. Picture the embedding space</h2><p class="muted">Illustrative 2D points—not a trained model. Same-color points represent examples that should be near each other.</p>
+<svg viewBox="0 0 600 290" role="img" aria-label="Embedding scatter plot with clusters"><rect x="48" y="18" width="520" height="225" rx="12" fill="#fbfcff" stroke="#dce3ef"/><g stroke="#e7ebf3"><path d="M48 75H568M48 132H568M48 189H568M178 18V243M308 18V243M438 18V243"/></g><g fill="#3b6be0"><circle cx="130" cy="80" r="8"/><circle cx="155" cy="105" r="8"/><circle cx="185" cy="73" r="8"/><circle cx="171" cy="125" r="8"/></g><g fill="#169b69"><circle cx="405" cy="68" r="8"/><circle cx="432" cy="92" r="8"/><circle cx="457" cy="58" r="8"/><circle cx="447" cy="113" r="8"/></g><g fill="#d88922"><circle cx="260" cy="190" r="8"/><circle cx="290" cy="210" r="8"/><circle cx="315" cy="180" r="8"/><circle cx="330" cy="216" r="8"/></g><g fill="#172033" font-size="12"><text x="95" y="47">Group A</text><text x="400" y="35">Group B</text><text x="254" y="163">Group C</text><text x="260" y="270">Embedding dimension 1 →</text><text transform="translate(17 180) rotate(-90)">Embedding dimension 2 →</text></g></svg>
+<p>Good embeddings put examples that matter together and examples that should be distinguished apart. The axes usually have no direct human meaning.</p>
+</div>
+<div class="panel"><h2>3. When is this useful?</h2><div class="grid"><div class="mini"><strong>Face / person matching</strong>“Is this the same person?”</div><div class="mini"><strong>Image retrieval</strong>Find images similar to a query image.</div><div class="mini"><strong>Few-shot learning</strong>Recognize a new class from only a few examples.</div><div class="mini"><strong>Duplicate detection</strong>Find near-duplicate items or records.</div></div></div>
+</section>
+<section id="middle" class="level">
+<div class="panel"><h2>1. Siamese networks: pairwise learning</h2>
+<p>A Siamese architecture applies the <b>same encoder</b> \(f_\\theta\) to two inputs:</p><div class="formula">z₁ = fθ(x₁)  z₂ = fθ(x₂)</div>
+<p>Then a distance or similarity function compares the embeddings. For Euclidean distance:</p><div class="formula">d(z₁,z₂) = ||z₁ − z₂||₂</div>
+<p>Training examples can be labeled as similar (positive pair) or dissimilar (negative pair). A contrastive-style objective rewards small distances for positive pairs and penalizes negative pairs that are too close.</p>
+<div class="formula">Lpair = y · d² + (1 − y) · max(0, m − d)²</div>
+<p class="small">Here y=1 means “similar,” y=0 means “dissimilar,” and m is a margin. This is one common contrastive-loss convention; other sources may swap label conventions or use slightly different formulas.</p>
+</div>
+<div class="panel"><h2>2. Triplet networks: relative comparisons</h2>
+<p>Instead of saying only whether a pair matches, give the model a three-item relationship:</p><ul><li><b>Anchor (a):</b> the reference example.</li><li><b>Positive (p):</b> an example that should be similar to the anchor.</li><li><b>Negative (n):</b> an example that should be less similar to the anchor.</li></ul>
+<div class="formula">Ltriplet = max(0, d(a,p)² − d(a,n)² + α)</div>
+<p>The margin α says the negative should be farther away than the positive by at least a chosen gap. If the gap is already large enough, the loss is zero and that triplet gives no gradient under this loss.</p>
+<div class="diagram"><div class="person blue"><div class="dot" style="background:#3b6be0"></div><b>Anchor a</b></div><div class="arrow">↔</div><div class="person green"><div class="dot" style="background:#169b69"></div><b>Positive p</b></div><div class="arrow">≪</div><div class="person red"><div class="dot" style="background:#d64c4c"></div><b>Negative n</b></div></div>
+<p class="small">The diagram indicates the desired relationship: d(a,p) should be smaller than d(a,n). It does not require every positive to be close to every other positive in every possible dataset.</p>
+</div>
+<div class="panel"><h2>3. Why shared weights?</h2><p>If each branch had a different encoder, the model could map the anchor and positive using different coordinate systems. Shared weights ensure all inputs are embedded by the same function, making distances comparable. The branches are multiple uses of one encoder—not three independent models.</p><h3>Training loop, conceptually</h3><ol><li>Sample pairs or triplets from labeled data.</li><li>Run each item through the shared encoder.</li><li>Compute embedding distances and the loss.</li><li>Backpropagate; update the shared encoder parameters.</li><li>Repeat with useful, varied examples.</li></ol></div>
+</section>
+<section id="deep" class="level">
+<div class="panel"><h2>1. Triplet loss, step by step</h2>
+<p>For squared Euclidean distances, a common triplet objective is:</p><div class="formula">L(a,p,n) = max(0, ||f(a)−f(p)||² − ||f(a)−f(n)||² + α)</div>
+<p>Define \(d_{ap}^2\) as the anchor-positive squared distance and \(d_{an}^2\) as the anchor-negative squared distance. The loss is positive when:</p><div class="formula">d²ₐₙ &lt; d²ₐₚ + α</div>
+<p>That means the negative is not sufficiently far away. The hinge-like max operation makes the loss zero once the required margin is satisfied.</p>
+<div class="grid"><div class="mini"><strong>Active triplet</strong>Loss &gt; 0. The model is penalized and receives a learning signal.</div><div class="mini"><strong>Satisfied triplet</strong>Loss = 0. The ranking constraint is met for this triplet.</div><div class="mini"><strong>Hard negative</strong>A negative example that is embedded too close to the anchor.</div></div>
+</div>
+<div class="panel"><h2>2. Interactive triplet-loss calculator</h2><p>Move the sliders to see when a triplet violates the margin. This is a scalar example of the loss—not a neural-network training run.</p>
+<div class="controls"><div><label for="dap">Anchor–positive distance: <span id="dapVal">1.0</span></label><input id="dap" type="range" min="0" max="4" step=".1" value="1"><p class="small">Smaller is better for a positive pair.</p></div><div><label for="dan">Anchor–negative distance: <span id="danVal">2.0</span></label><input id="dan" type="range" min="0" max="5" step=".1" value="2"><p class="small">Larger is better for a negative pair.</p></div><div><label for="margin">Margin α: <span id="marginVal">1.0</span></label><input id="margin" type="range" min="0" max="4" step=".1" value="1"><p class="small">How much farther the negative should be.</p></div><div><div class="small">Current triplet loss</div><div class="metric" id="lossVal">0.00</div><div id="status" class="status good">Margin satisfied — zero loss.</div></div></div>
+<div class="formula" id="calculation">max(0, 1.0² − 2.0² + 1.0) = 0</div>
+<svg viewBox="0 0 600 115" aria-label="Distances on a line"><text x="12" y="18" font-size="12" fill="#5d687d">Illustrative distance scale</text><line x1="35" y1="62" x2="565" y2="62" stroke="#b7c2d6" stroke-width="4" stroke-linecap="round"/><circle id="anchorDot" cx="35" cy="62" r="9" fill="#3b6be0"/><circle id="posDot" cx="141" cy="62" r="9" fill="#169b69"/><circle id="negDot" cx="247" cy="62" r="9" fill="#d64c4c"/><text x="25" y="91" font-size="12" fill="#2855c5">Anchor</text><text id="posLabel" x="120" y="91" font-size="12" fill="#147d54">Positive</text><text id="negLabel" x="226" y="91" font-size="12" fill="#b93838">Negative</text></svg>
+</div>
+<div class="panel"><h2>3. Data sampling is part of the learning problem</h2>
+<p>Triplet loss can be unhelpful if most triplets are trivially easy. If every negative is already far away, the loss quickly becomes zero and contributes little learning signal. Common strategies include:</p>
+<ul><li><b>Random negatives:</b> simple to sample, but many may be too easy.</li><li><b>Hard negatives:</b> negatives close to the anchor in embedding space; informative but can be noisy or mislabeled.</li><li><b>Semi-hard negatives:</b> negatives farther than the positive but still within the margin region, depending on the exact mining convention.</li><li><b>Balanced batches:</b> include several examples from multiple identities/classes so useful comparisons can be formed.</li></ul>
+<details><summary>Important caveat: hard-negative mining can backfire</summary><p>If a “negative” is actually a valid match, or if labels are noisy, forcing it away teaches the wrong geometry. Very hard negatives can also destabilize training early. Mining strategy, batch construction, and data quality matter.</p></details>
+</div>
+<div class="panel"><h2>4. What the loss does—and does not—guarantee</h2><ul><li>It enforces local constraints for the pairs/triplets used during training.</li><li>It does not guarantee that every same-class example is closer than every different-class example.</li><li>The embedding geometry depends on the encoder, distance metric, margin, sampling strategy, and data.</li><li>At inference time, the encoder can embed a new item once; then compare it with stored embeddings, often without running a three-branch network.</li></ul></div>
+</section>
+<section class="panel">
+<h2>Quick knowledge check</h2><p class="muted">Choose an answer for each question to get feedback.</p>
+<div class="question" data-q="0"><b>1. What is shared in a Siamese network?</b><div class="answers"><button data-a="0">The same encoder parameters are used for both inputs.</button><button data-a="1">Both inputs must be identical images.</button><button data-a="2">The two embeddings are forced to be exactly equal.</button></div><div class="feedback"></div></div>
+<div class="question" data-q="1"><b>2. In triplet learning, what should usually be true?</b><div class="answers"><button data-a="0">The negative is closer to the anchor than the positive.</button><button data-a="1">The anchor-positive distance is smaller than the anchor-negative distance, with a margin.</button><button data-a="2">All embeddings must have distance zero.</button></div><div class="feedback"></div></div>
+<div class="question" data-q="2"><b>3. If triplet loss is zero, what does that mean for this triplet?</b><div class="answers"><button data-a="0">The model is perfect on all possible examples.</button><button data-a="1">The margin constraint is satisfied, so this triplet has no loss under this objective.</button><button data-a="2">The model has stopped learning permanently.</button></div><div class="feedback"></div></div>
+<div class="question" data-q="3"><b>4. Why might random triplets train poorly?</b><div class="answers"><button data-a="0">They can be mostly easy, yielding zero loss and little useful signal.</button><button data-a="1">Triplet loss cannot use neural networks.</button><button data-a="2">Random sampling always causes label leakage.</button></div><div class="feedback"></div></div>
+<div id="score" class="status" aria-live="polite">Score: 0 / 4 answered correctly</div><button class="secondary" id="resetQuiz">Reset quiz</button>
+</section>
+<section class="panel">
+<h2>One-minute summary</h2>
+<ul><li><b>Siamese:</b> shared encoder + pairwise comparison.</li><li><b>Triplet:</b> shared encoder + anchor/positive/negative relationship.</li><li><b>Embedding:</b> vector representation where distance is trained to carry meaning.</li><li><b>Triplet loss:</b> penalizes cases where the negative is not farther than the positive by the margin.</li><li><b>Practical challenge:</b> choose good pairs/triplets and mine informative negatives.</li></ul>
+<p class="small">This is a concept-focused companion guide to the requested Probabilistic Machine Learning sections, emphasizing Siamese and triplet networks. Notation and specific loss conventions can vary by text or implementation.</p>
+</section>
+</main>
+<script>
+const tabs=[...document.querySelectorAll('.tab')];
+tabs.forEach(t=>t.addEventListener('click',()=>{tabs.forEach(x=>x.classList.toggle('active',x===t));document.querySelectorAll('.level').forEach(x=>x.classList.toggle('active',x.id===t.dataset.level));}));
+const dap=document.getElementById('dap'),dan=document.getElementById('dan'),margin=document.getElementById('margin');
+function updateLoss(){const p=+dap.value,n=+dan.value,m=+margin.value;const loss=Math.max(0,p*p-n*n+m);document.getElementById('dapVal').textContent=p.toFixed(1);document.getElementById('danVal').textContent=n.toFixed(1);document.getElementById('marginVal').textContent=m.toFixed(1);document.getElementById('lossVal').textContent=loss.toFixed(2);document.getElementById('calculation').textContent=`max(0, ${p.toFixed(1)}² − ${n.toFixed(1)}² + ${m.toFixed(1)}) = ${loss.toFixed(2)}`;const s=document.getElementById('status');if(loss===0){s.className='status good';s.textContent='Margin satisfied — zero loss for this triplet.'}else{s.className='status bad';s.textContent='Margin violated — this triplet contributes positive loss.'}
+const scale=95;document.getElementById('posDot').setAttribute('cx',35+Math.min(p,4)*scale);document.getElementById('negDot').setAttribute('cx',35+Math.min(n,5)*scale);document.getElementById('posLabel').setAttribute('x',Math.min(500,20+Math.min(p,4)*scale));document.getElementById('negLabel').setAttribute('x',Math.min(500,20+Math.min(n,5)*scale));}
+[dap,dan,margin].forEach(x=>x.addEventListener('input',updateLoss));updateLoss();
+const correct=[0,1,1,0], explanations=[
+'Correct: weight sharing makes both inputs pass through the same embedding function.',
+'Correct: the positive should be closer than the negative by the required margin.',
+'Correct: zero loss only means this particular triplet satisfies the chosen constraint.',
+'Correct: easy triplets often already satisfy the margin, so they provide little gradient signal.'
+];let score=0,answered=new Set();
+document.querySelectorAll('.question').forEach(q=>q.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{const qi=+q.dataset.q;if(answered.has(qi))return;answered.add(qi);const ok=+b.dataset.a===correct[qi];if(ok)score++;const f=q.querySelector('.feedback');f.textContent=ok?explanations[qi]:`Not quite. ${explanations[qi]}`;f.className='feedback show '+(ok?'correct':'incorrect');q.querySelectorAll('button').forEach(x=>x.disabled=true);document.getElementById('score').textContent=`Score: ${score} / 4 answered correctly (${answered.size} answered)`;})));
+document.getElementById('resetQuiz').addEventListener('click',()=>{score=0;answered.clear();document.querySelectorAll('.question').forEach(q=>{q.querySelectorAll('button').forEach(x=>x.disabled=false);const f=q.querySelector('.feedback');f.textContent='';f.className='feedback';});document.getElementById('score').textContent='Score: 0 / 4 answered correctly';});
+</script>
+</body></html>
