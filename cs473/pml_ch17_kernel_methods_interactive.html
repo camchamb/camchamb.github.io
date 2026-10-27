@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PML: Kernel Methods — Interactive Study Guide</title>
+<style>
+:root{--ink:#18212f;--muted:#5d6878;--paper:#f6f8fb;--card:#fff;--line:#dce3ec;--blue:#2457c5;--pale:#eaf0ff;--green:#18794e;--amber:#8a5a00}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.58 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:#172744;color:#fff;padding:36px 20px}header .wrap,main{max-width:1000px;margin:auto}header p{color:#d8e2f3;max-width:750px}h1{line-height:1.12;font-size:clamp(2rem,5vw,3.2rem);margin:0 0 12px}h2{margin-top:0;font-size:1.65rem}h3{margin-bottom:6px}main{padding:22px 16px 60px}.nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}.nav button,.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer}.nav button.active,.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}section{display:none}.section.active{display:block}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin:14px 0;box-shadow:0 3px 14px #1d31500a}.eyebrow{text-transform:uppercase;letter-spacing:.09em;font-size:.75rem;font-weight:800;color:var(--blue)}.muted{color:var(--muted)}.callout{border-left:4px solid var(--blue);background:var(--pale);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}.formula{background:#f0f3f8;border-radius:10px;padding:13px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.control{margin:14px 0}.control label{display:flex;justify-content:space-between;gap:12px;font-weight:650}.control input[type=range]{width:100%;accent-color:var(--blue)}canvas{width:100%;height:260px;display:block;border:1px solid var(--line);border-radius:12px;background:white}.quiz-q{border-top:1px solid var(--line);padding:15px 0}.quiz-q p{font-weight:700;margin:0 0 8px}.quiz-q label{display:block;padding:6px 8px;border-radius:8px;cursor:pointer}.quiz-q label:hover{background:#f3f6fa}.feedback{font-weight:650;margin-top:7px;min-height:24px}.good{color:var(--green)}.bad{color:#b42318}.pill{display:inline-block;border-radius:999px;padding:3px 9px;background:#eef2f7;font-size:.82rem;font-weight:700}.step{display:flex;gap:12px;align-items:flex-start;margin:12px 0}.num{flex:0 0 30px;height:30px;display:grid;place-items:center;background:var(--pale);color:var(--blue);border-radius:50%;font-weight:800}.small{font-size:.9rem}.footer{color:var(--muted);font-size:.9rem;border-top:1px solid var(--line);padding-top:15px;margin-top:24px}@media(max-width:700px){.two{grid-template-columns:1fr}.card{padding:17px}header{padding:28px 18px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<div class="eyebrow" style="color:#a9c1ff">Interactive study guide · PML: An Introduction</div>
+<h1>Kernel Methods: from similarity to Gaussian processes</h1>
+<p>Chapter 17.1–17.2.2 · Mercer kernels, Gaussian processes, and predictions when observations contain noise.</p>
+<p><span class="pill">Level 1 · Intuition</span> <span class="pill">Level 2 · Explore</span> <span class="pill">Level 3 · Math</span></p>
+</div></header>
+<main>
+<div class="nav" role="tablist">
+<button class="active" data-target="intuition">1. Build intuition</button>
+<button data-target="explore">2. Explore interactively</button>
+<button data-target="math">3. Math & derivation</button>
+<button data-target="quiz">4. Knowledge check</button>
+</div>
+
+<section id="intuition" class="section active">
+<div class="card"><div class="eyebrow">Level 1 · High-school intuition</div><h2>What is a kernel?</h2>
+<p>Imagine you want to predict a house price. Instead of deciding only whether two houses are close in raw feature space, you need a way to measure how <em>similar</em> they are for the pattern you care about.</p>
+<p>A <strong>kernel</strong> is a function \(k(x,x')\) that measures similarity between inputs. In many kernel methods, it acts as if the inputs were mapped into a richer feature space, where simple relationships can represent complicated patterns—without explicitly building that mapping.</p>
+<div class="callout"><strong>Core idea:</strong> a kernel is a similarity rule; a Gaussian process (GP) uses that rule to describe which functions are plausible and how predictions at different inputs relate.</div>
+<h3>Analogy: a flexible rubber ruler</h3><p>A linear kernel says similarity depends on alignment with a straight-line pattern. An RBF (Gaussian) kernel says nearby inputs are strongly related, while distant inputs become less related. Its <em>length-scale</em> controls how quickly similarity fades.</p>
+<div class="two">
+<div><h3>Short length-scale</h3><p>Only very nearby points influence each other strongly. The model can change rapidly and fit wiggly patterns.</p></div>
+<div><h3>Long length-scale</h3><p>Even points farther apart remain related. Predictions tend to vary more smoothly.</p></div>
+</div></div>
+<div class="card"><h2>What is a Gaussian process?</h2>
+<p>A GP is a probability distribution over functions. Instead of choosing one curve immediately, it describes many possible curves and how plausible each is before and after seeing data.</p>
+<div class="step"><div class="num">1</div><div><strong>Prior:</strong> choose a mean function \(m(x)\) and kernel \(k(x,x')\). These define the broad shapes and relationships expected before observing data.</div></div>
+<div class="step"><div class="num">2</div><div><strong>Observe examples:</strong> see input-output pairs, such as measured temperature at several times.</div></div>
+<div class="step"><div class="num">3</div><div><strong>Condition on data:</strong> update the distribution over functions. Curves inconsistent with observations become less plausible.</div></div>
+<div class="step"><div class="num">4</div><div><strong>Predict:</strong> get both a predictive mean and uncertainty. Uncertainty usually grows farther from observed inputs.</div></div>
+<p class="formula">f(x) ~ GP(m(x), k(x,x'))</p>
+<p>The notation says that any finite collection of function values has a joint Gaussian distribution. The kernel gives their covariance.</p></div>
+<div class="card"><h2>Why mention noisy observations?</h2><p>Real measurements are rarely exact. A thermometer may read 21.4°C when the underlying temperature is 21.0°C. A noisy GP separates the smooth latent function \(f(x)\) from measurement noise:</p><p class="formula">y = f(x) + ε, &nbsp; ε ~ N(0, σ²)</p><p>The model should learn the underlying trend without trying to pass exactly through every noisy measurement.</p></div>
+</section>
+
+<section id="explore" class="section">
+<div class="card"><div class="eyebrow">Level 2 · Interactive exploration</div><h2>1. Change the kernel length-scale</h2>
+<p>Explore the RBF kernel \(k(x,x')=\exp[-(x-x')^2/(2\ell^2)]\). The graph shows how similar two inputs are as their distance changes.</p>
+<div class="control"><label for="ell">Length-scale ℓ <span id="ellval">1.00</span></label><input id="ell" type="range" min="0.15" max="3" value="1" step="0.05"></div>
+<canvas id="kernelPlot" aria-label="RBF kernel similarity graph"></canvas>
+<p id="kernelExplain" class="callout">With a moderate length-scale, similarity decreases gradually as points move apart.</p>
+<h3>Try it</h3><p>Set ℓ to 0.25, then to 2.5. What happens to similarity at a distance of 1?</p>
+<div class="formula">k(0, 1) = exp(−1 / (2ℓ²))</div>
+<p>Current \(k(0,1)\): <strong id="kval">0.607</strong></p></div>
+
+<div class="card"><h2>2. Noise changes how closely the prediction follows data</h2>
+<p>This schematic shows measured points (dots) and a smoothed trend. Move the noise setting to compare a model that trusts observations strongly with one that expects substantial measurement error. This is an illustration of the effect, not a full GP posterior sampler.</p>
+<div class="control"><label for="noise">Assumed observation noise σ <span id="noiseval">0.25</span></label><input id="noise" type="range" min="0" max="1" value="0.25" step="0.05"></div>
+<canvas id="noisePlot" aria-label="Schematic noisy observations and trend"></canvas>
+<p id="noiseExplain" class="callout">Low noise means the observations are treated as relatively trustworthy.</p></div>
+
+<div class="card"><h2>3. Predictive uncertainty: what should happen?</h2>
+<p>Choose a query location relative to the observed data. Think about how much information the nearby training points provide.</p>
+<div class="control"><label for="queryx">Query location x* <span id="queryval">0.0</span></label><input id="queryx" type="range" min="-5" max="5" value="0" step="0.25"></div>
+<div id="uncertainty" class="callout">Near the observations, the model has nearby evidence and typically lower uncertainty.</div>
+<p class="small muted">Rule of thumb: with a stationary kernel and a fixed amount of data, predictions often become less certain as you move away from observed inputs. The exact amount depends on the kernel, noise, and data layout.</p></div>
+</section>
+
+<section id="math" class="section">
+<div class="card"><div class="eyebrow">Level 3 · College-level math</div><h2>Mercer kernels: the important properties</h2>
+<p>A symmetric positive-semidefinite kernel assigns a Gram matrix \(K\) to any finite set of inputs \(x_1,\dots,x_n\), where \(K_{ij}=k(x_i,x_j)\). Positive semidefinite means:</p>
+<p class="formula">aᵀ K a ≥ 0 for every vector a</p>
+<p>This condition matters because a covariance matrix must be positive semidefinite. It ensures the kernel can serve as a valid covariance function for a GP (under the usual domain/regularity assumptions).</p>
+<h3>Common examples</h3>
+<ul><li><strong>Linear:</strong> \(k(x,x')=x^\top x'\). Captures linear relationships in the original feature space.</li><li><strong>Polynomial:</strong> \(k(x,x')=(x^\top x'+c)^d\), with suitable parameter choices. Captures interactions up to a chosen degree.</li><li><strong>RBF / squared exponential:</strong> \(k(x,x')=\sigma_f^2\exp[-\|x-x'\|^2/(2\ell^2)]\). Encodes smoothness, with signal scale \(\sigma_f^2\) and length-scale \(\ell\).</li></ul>
+<div class="callout"><strong>Mercer intuition:</strong> a valid kernel behaves like an inner product in some feature space, \(k(x,x')=\phi(x)^\top\phi(x')\), possibly one that is very high- or infinite-dimensional. You usually calculate \(k\) directly rather than construct \(\phi\).</div></div>
+<div class="card"><h2>GP regression with noisy observations</h2>
+<p>Assume a zero-mean GP prior and training data \(X=(x_1,\ldots,x_n)\), \(y=(y_1,\ldots,y_n)^\top\):</p>
+<p class="formula">f ~ GP(0, k), &nbsp; y = f(X) + ε, &nbsp; ε ~ N(0, σ²I)</p>
+<p>Define \(K_{XX}\) by \([K_{XX}]_{ij}=k(x_i,x_j)\). Noise adds \(\sigma^2 I\) to the covariance of observed targets:</p>
+<p class="formula">y ~ N(0, Kₓₓ + σ²I)</p>
+<p>For test inputs \(X_*\), let \(K_{*X}\) be test-to-training covariance, \(K_{X*}=K_{*X}^\top\), and \(K_{**}\) be test-to-test covariance. The posterior predictive distribution of latent function values is Gaussian:</p>
+<p class="formula">f* | X,y,X* ~ N( μ*, Σ* )</p>
+<p class="formula">μ* = K*X (KXX + σ²I)⁻¹ y</p>
+<p class="formula">Σ* = K** − K*X (KXX + σ²I)⁻¹ KX*</p>
+<p>The mean is a data-weighted combination determined by covariance. The covariance subtracts uncertainty explained by the observations. For predicting a <em>new noisy target</em> \(y_*\), add observation noise to the latent predictive covariance: \(\Sigma_{y_*}=\Sigma_*+\sigma^2I\).</p></div>
+<div class="card"><h2>Derivation: why does the noise appear on the diagonal?</h2>
+<div class="step"><div class="num">1</div><div>Latent training values have covariance \(K_{XX}\).</div></div>
+<div class="step"><div class="num">2</div><div>Independent observation noise has covariance \(\sigma^2I\): each observation gets variance \(\sigma^2\), and different noise terms have zero covariance.</div></div>
+<div class="step"><div class="num">3</div><div>Independent covariances add, so \(\operatorname{Cov}(y)=K_{XX}+\sigma^2I\).</div></div>
+<div class="step"><div class="num">4</div><div>Conditioning a joint Gaussian gives the predictive mean and covariance above. In practice, solve linear systems using a Cholesky factorization rather than explicitly forming a matrix inverse.</div></div>
+<div class="callout"><strong>Common distinction:</strong> \(\sigma^2\) is measurement-noise variance, while \(\sigma_f^2\) is the latent function's signal variance. They describe different sources of variation.</div></div>
+</section>
+
+<section id="quiz" class="section">
+<div class="card"><div class="eyebrow">Check your understanding</div><h2>Quick quiz</h2><p>Choose an answer for each question, then check your work. Explanations appear immediately.</p>
+<div class="quiz-q" data-answer="b" data-explain="The Gram matrix of a valid kernel must be positive semidefinite, which also makes it suitable as a covariance matrix."><p>1. What property makes a kernel suitable as a covariance function?</p><label><input type="radio" name="q1" value="a"> It must always return a negative number.</label><label><input type="radio" name="q1" value="b"> Its Gram matrix is positive semidefinite.</label><label><input type="radio" name="q1" value="c"> It must be a probability density.</label><div class="feedback"></div></div>
+<div class="quiz-q" data-answer="a" data-explain="A larger RBF length-scale makes similarity decay more slowly with distance."><p>2. If the RBF length-scale ℓ increases, what happens to similarity at a fixed nonzero distance?</p><label><input type="radio" name="q2" value="a"> Similarity generally increases.</label><label><input type="radio" name="q2" value="b"> Similarity always becomes zero.</label><label><input type="radio" name="q2" value="c"> The kernel stops being symmetric.</label><div class="feedback"></div></div>
+<div class="quiz-q" data-answer="c" data-explain="The GP predictive distribution gives a mean and covariance, allowing the model to express uncertainty as well as a point prediction."><p>3. What does a GP prediction provide?</p><label><input type="radio" name="q3" value="a"> Only a class label.</label><label><input type="radio" name="q3" value="b"> A guaranteed correct answer.</label><label><input type="radio" name="q3" value="c"> A predictive distribution, including mean and uncertainty.</label><div class="feedback"></div></div>
+<div class="quiz-q" data-answer="b" data-explain="Independent observation noise contributes σ²I to the covariance of observed targets. For latent f* predictions, do not add test observation noise unless predicting noisy y*."><p>4. Where does observation noise enter GP regression?</p><label><input type="radio" name="q4" value="a"> It replaces the kernel entirely.</label><label><input type="radio" name="q4" value="b"> It adds σ²I to the training covariance matrix.</label><label><input type="radio" name="q4" value="c"> It is added to the predictive mean only.</label><div class="feedback"></div></div>
+<div class="quiz-q" data-answer="a" data-explain="A noisy target includes both uncertainty about the latent function and the new measurement noise."><p>5. Compared with the latent function f*, a new noisy target y* has:</p><label><input type="radio" name="q5" value="a"> Additional observation-noise variance.</label><label><input type="radio" name="q5" value="b"> Always lower variance.</label><label><input type="radio" name="q5" value="c"> No uncertainty.</label><div class="feedback"></div></div>
+<button class="btn primary" id="score">Check answers</button> <button class="btn" id="reset">Reset quiz</button><p id="scoreline" aria-live="polite"></p>
+</div>
+<div class="card"><h2>One-minute summary</h2><ul><li>A kernel is a similarity function whose Gram matrices are positive semidefinite.</li><li>A GP is a distribution over functions; the kernel specifies covariance between function values.</li><li>GP regression returns a predictive mean and uncertainty.</li><li>With noisy targets, use \(K_{XX}+\sigma^2I\); add test noise when predicting a new observed target rather than the latent function.</li></ul></div>
+</section>
+<div class="footer">Study guide aligned to the topics in Kevin P. Murphy, <em>Probabilistic Machine Learning: An Introduction</em>, Chapter 17.1–17.2.2. This is an explanatory learning aid, not a reproduction of the textbook. Notation may vary slightly by edition.</div>
+</main>
+<script>
+const tabs=[...document.querySelectorAll('.nav button')];
+tabs.forEach(b=>b.addEventListener('click',()=>{tabs.forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id===b.dataset.target));}));
+function setupCanvas(c){const dpr=window.devicePixelRatio||1;const r=c.getBoundingClientRect();c.width=Math.max(1,Math.round(r.width*dpr));c.height=Math.max(1,Math.round(r.height*dpr));const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w:r.width,h:r.height};}
+function axes(ctx,w,h,xmin,xmax,ymin,ymax){ctx.clearRect(0,0,w,h);ctx.strokeStyle='#e5eaf1';ctx.lineWidth=1;for(let i=0;i<=5;i++){let x=42+(w-58)*i/5;ctx.beginPath();ctx.moveTo(x,12);ctx.lineTo(x,h-30);ctx.stroke();}for(let i=0;i<=4;i++){let y=12+(h-42)*i/4;ctx.beginPath();ctx.moveTo(42,y);ctx.lineTo(w-16,y);ctx.stroke();}ctx.strokeStyle='#667085';ctx.beginPath();ctx.moveTo(42,12);ctx.lineTo(42,h-30);ctx.lineTo(w-16,h-30);ctx.stroke();}
+function line(ctx,w,h,fn,xmin,xmax,ymin,ymax,color='#2457c5',width=2.5){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();for(let i=0;i<=240;i++){let x=xmin+(xmax-xmin)*i/240,y=fn(x);let px=42+(w-58)*(x-xmin)/(xmax-xmin),py=12+(h-42)*(ymax-y)/(ymax-ymin);if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);}ctx.stroke();}
+function drawKernel(){const c=document.getElementById('kernelPlot'),{ctx,w,h}=setupCanvas(c),ell=+document.getElementById('ell').value;axes(ctx,w,h,-4,4,0,1);line(ctx,w,h,x=>Math.exp(-x*x/(2*ell*ell)),-4,4,0,1);document.getElementById('ellval').textContent=ell.toFixed(2);let k=Math.exp(-1/(2*ell*ell));document.getElementById('kval').textContent=k.toFixed(3);document.getElementById('kernelExplain').textContent=ell<.5?'Short length-scale: similarity fades quickly; distant points barely influence one another.':ell>2?'Long length-scale: similarity fades slowly; even fairly distant points remain related.':'Moderate length-scale: similarity decreases gradually as points move apart.';}
+const pts=[[-4,-.65],[-3,-.25],[-2,.7],[-1,.55],[0,-.2],[1,-.55],[2,.35],[3,.8],[4,.45]];
+function drawNoise(){const c=document.getElementById('noisePlot'),{ctx,w,h}=setupCanvas(c),n=+document.getElementById('noise').value;axes(ctx,w,h,-5,5,-1.5,1.5);const truth=x=>.75*Math.sin(x*1.15)+.12*x/2;line(ctx,w,h,truth,-5,5,-1.5,1.5,'#98a2b3',2);const smooth=x=>{let num=0,den=0;pts.forEach(([px,py],i)=>{let y=py*(1-n)+truth(px)*n;let wt=Math.exp(-((x-px)**2)/(2*(.35+n*1.5)**2));num+=wt*y;den+=wt;});return num/den};line(ctx,w,h,smooth,-5,5,-1.5,1.5,'#2457c5',3);pts.forEach(([x,y],i)=>{let yy=y+(i%2===0?1:-1)*n*.35,px=42+(w-58)*(x+5)/10,py=12+(h-42)*(1.5-yy)/3;ctx.fillStyle='#c2410c';ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();});document.getElementById('noiseval').textContent=n.toFixed(2);document.getElementById('noiseExplain').textContent=n<.3?'Low noise: observations are treated as relatively trustworthy, so the fit should stay closer to them.':n>.7?'High noise: individual measurements are treated as less reliable, so the model emphasizes the broader trend.':'Moderate noise: balance the observed points with a smoother underlying trend.';}
+function updateUncertainty(){let x=+document.getElementById('queryx').value;document.getElementById('queryval').textContent=x.toFixed(2);let d=Math.min(...pts.map(p=>Math.abs(p[0]-x)));let msg=d<.65?'This query is close to observed inputs. Nearby evidence usually makes the latent-function prediction more certain.':d<1.5?'This query is between or somewhat away from observations. Uncertainty is often moderate, depending on the kernel and noise.':'This query is far from observed inputs. The prediction relies more heavily on the prior, so uncertainty typically increases.';document.getElementById('uncertainty').textContent=msg;}
+document.getElementById('ell').addEventListener('input',drawKernel);document.getElementById('noise').addEventListener('input',drawNoise);document.getElementById('queryx').addEventListener('input',updateUncertainty);window.addEventListener('resize',()=>{drawKernel();drawNoise();});drawKernel();drawNoise();updateUncertainty();
+document.getElementById('score').addEventListener('click',()=>{let score=0;document.querySelectorAll('.quiz-q').forEach(q=>{let picked=q.querySelector('input:checked'),f=q.querySelector('.feedback'),correct=picked&&picked.value===q.dataset.answer;if(correct)score++;f.textContent=(correct?'Correct. ':'Not quite. ')+q.dataset.explain;f.className='feedback '+(correct?'good':'bad');});document.getElementById('scoreline').textContent=`You got ${score} out of 5 correct.`;});
+document.getElementById('reset').addEventListener('click',()=>{document.querySelectorAll('.quiz-q input').forEach(i=>i.checked=false);document.querySelectorAll('.feedback').forEach(f=>{f.textContent='';f.className='feedback';});document.getElementById('scoreline').textContent='';});
+</script>
+</body>
+</html>
