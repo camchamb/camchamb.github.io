@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PML Chapter 9.1–9.2 Study Guide</title>
+<style>
+:root{--ink:#182538;--muted:#5b687a;--paper:#f5f7fb;--line:#dce3ec;--blue:#2864dc;--orange:#d97728;--teal:#138477}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.58 system-ui,Segoe UI,Arial,sans-serif}header{background:#14233b;color:white;padding:30px 20px}header>div,main{max-width:1000px;margin:auto}h1{font-size:clamp(1.7rem,4vw,2.5rem);line-height:1.2;margin:0}header p{color:#dbe5f4}main{padding:22px 18px 55px}.scope{padding:14px 16px;background:#eaf0ff;border:1px solid #ccd8ff;border-radius:12px}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.tab{border:1px solid var(--line);border-radius:12px;padding:12px;background:white;text-align:left;cursor:pointer;color:var(--ink)}.tab strong,.tab span{display:block}.tab span{font-size:.86rem;color:var(--muted)}.tab.active{border:2px solid var(--blue);background:#eef3ff}.level,.demo{display:none;background:white;border:1px solid var(--line);border-radius:16px;padding:21px;margin-bottom:18px}.level.active,.demo{display:block}h2{font-size:1.45rem;margin:0 0 8px}h3{font-size:1.1rem;margin:19px 0 5px}.muted{color:var(--muted)}.analogy{border-left:4px solid var(--teal);background:#edf9f7;padding:12px 14px;border-radius:0 10px 10px 0;margin:14px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mini{border:1px solid var(--line);border-radius:12px;padding:13px}.mini b{color:var(--blue)}.formula{font-family:ui-monospace,Consolas,monospace;background:#f1f4f8;padding:11px;border-radius:8px;overflow-wrap:anywhere;margin:10px 0}.quiz{border:1px dashed #aab7c9;border-radius:12px;padding:14px;margin-top:17px}.quiz button,.action{background:var(--blue);color:white;border:0;border-radius:9px;padding:9px 12px;cursor:pointer;font:inherit;margin:5px 5px 0 0}.feedback{font-weight:600;margin-top:8px}.controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:12px 0}.controls label{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.controls input{width:120px;accent-color:var(--blue)}select{padding:7px;border:1px solid var(--line);border-radius:8px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.stat{background:#f1f4f8;padding:10px;border-radius:9px}.stat small{display:block;color:var(--muted)}.legend{display:flex;gap:15px;flex-wrap:wrap;font-size:.9rem}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}.chartbox{overflow-x:auto}.chart{width:100%;min-width:320px;height:auto;background:#fcfdff;border:1px solid #edf0f5;border-radius:10px}.note{background:#fff5e7;border:1px solid #f1d5a7;padding:12px;border-radius:10px;margin-top:12px}.end{color:var(--muted);font-size:.9rem;margin-top:18px}@media(max-width:700px){.tabs,.grid,.stats{grid-template-columns:1fr}}
+</style></head><body>
+<header><div><h1>Chapter 9.1–9.2: Linear Discriminant Analysis</h1><p>An interactive guide to Gaussian generative classifiers, decision boundaries, model fitting, and nearest-centroid classification.</p></div></header>
+<main>
+<div class="scope"><b>Scope:</b> Covers 9.1 and the core material in 9.2. Intentionally skips <b>9.2.3</b> and excludes <b>9.2.6.1 and all later subsections</b>. Explanations build from high-school intuition to college-level equations.</div>
+<div class="tabs" role="tablist">
+<button class="tab active" data-target="easy" aria-selected="true"><strong>1. High-school level</strong><span>Classifying by describing groups</span></button>
+<button class="tab" data-target="intuition" aria-selected="false"><strong>2. Build intuition</strong><span>Gaussian classes and boundaries</span></button>
+<button class="tab" data-target="college" aria-selected="false"><strong>3. College level</strong><span>Bayes rule, LDA, QDA, fitting</span></button>
+</div>
+<section class="level active" id="easy">
+<h2>Level 1: Describe each group, then classify</h2>
+<p>Imagine a system that identifies apples and oranges using measurements like weight and diameter. You have examples whose labels are known.</p>
+<div class="analogy"><b>Generative classification:</b> learn what examples from each class tend to look like, then ask which class best explains a new example.</div>
+<div class="grid"><div class="mini"><b>Step 1 — Learn the classes</b><p>Estimate each fruit type’s typical measurements and how much they vary.</p></div><div class="mini"><b>Step 2 — Compare explanations</b><p>Ask how plausible a new fruit’s measurements are for each class. Also account for how common each class is.</p></div></div>
+<h3>What does “Gaussian” mean?</h3><p>A Gaussian (normal) distribution is a bell-shaped curve. Examples near the mean are more typical; examples farther away are less typical. In multiple dimensions, covariance describes spread and relationships between features.</p>
+<h3>LDA versus QDA</h3><ul><li><b>LDA:</b> all classes share the same covariance (spread/shape). Boundaries are linear: lines in 2D, planes in 3D.</li><li><b>QDA:</b> each class has its own covariance. Boundaries can curve, giving more flexibility but requiring more parameters.</li></ul>
+<div class="quiz" data-answer="same"><b>Quick check:</b> What assumption makes LDA simpler than QDA?<div><button data-choice="different">Each class has its own covariance</button><button data-choice="same">All classes share one covariance matrix</button></div><div class="feedback"></div></div>
+</section>
+<section class="level" id="intuition">
+<h2>Level 2: From distributions to a decision boundary</h2>
+<p>Gaussian discriminant analysis is a <i>generative</i> approach: it models the distribution of features within each class, along with each class’s prior probability.</p>
+<div class="formula">p(y = k | x) ∝ p(x | y = k) p(y = k)</div>
+<p><b>Likelihood</b> \(p(x\mid y=k)\) says how well class \(k\) explains the features. <b>Prior</b> \(p(y=k)\) says how common the class is before seeing the features. Bayes’ rule combines them into a posterior class probability.</p>
+<h3>Why covariance changes the boundary</h3><div class="grid"><div class="mini"><b>LDA: shared covariance</b><p>When Gaussian classes share covariance, quadratic terms in \(x\) cancel when comparing classes. The discriminant score is linear in \(x\).</p></div><div class="mini"><b>QDA: class-specific covariance</b><p>When covariance differs, the quadratic terms generally do not cancel. The boundary can curve.</p></div></div>
+<h3>Model fitting</h3><p>With labeled training data, estimate class priors from class frequencies, class means from feature averages, and covariance from within-class variation. LDA pools information to estimate one shared covariance; QDA estimates a separate covariance for each class.</p>
+<h3>Nearest-centroid classifier</h3><p>Predict the class whose mean (centroid) is closest to the new point. Ordinary Euclidean nearest-centroid classification ignores class-specific covariance and priors unless modified. It is simple, but not identical to general Gaussian discriminant analysis.</p>
+<div class="note"><b>Remember:</b> The decision rule comes from estimated probability distributions and Bayes’ rule—not from drawing a boundary by eye.</div>
+<div class="quiz" data-answer="prior"><b>Quick check:</b> If two classes explain a point equally well (same likelihood), what can still change the prediction?<div><button data-choice="nothing">Nothing—the classes must tie</button><button data-choice="prior">Their prior probabilities</button></div><div class="feedback"></div></div>
+</section>
+<section class="level" id="college">
+<h2>Level 3: College-level formulation</h2>
+<p>Let \(x\in\mathbb R^D\) be the feature vector and \(y\in\{1,\ldots,K\}\) the class label. Gaussian discriminant analysis models:</p>
+<div class="formula">p(x | y=k) = 𝒩(x | μ<sub>k</sub>, Σ<sub>k</sub>), &nbsp; p(y=k)=π<sub>k</sub></div>
+<p>Bayes’ rule gives the posterior:</p><div class="formula">p(y=k | x) = [π<sub>k</sub> 𝒩(x | μ<sub>k</sub>, Σ<sub>k</sub>)] / [∑<sub>j=1</sub><sup>K</sup> π<sub>j</sub> 𝒩(x | μ<sub>j</sub>, Σ<sub>j</sub>)]</div>
+<p>The maximum a posteriori (MAP) classifier predicts \(\hat y=\arg\max_k p(y=k\mid x)\), equivalently maximizing \(\log p(x\mid y=k)+\log\pi_k\).</p>
+<h3>Discriminant score</h3><div class="formula">δ<sub>k</sub>(x) = −½ log |Σ<sub>k</sub>| − ½(x−μ<sub>k</sub>)ᵀΣ<sub>k</sub>⁻¹(x−μ<sub>k</sub>) + log π<sub>k</sub></div>
+<p>Terms shared across classes, such as \(-\frac D2\log(2\pi)\), can be dropped when choosing the maximum score.</p>
+<div class="grid"><div class="mini"><b>LDA</b><div class="formula">Σ<sub>k</sub> = Σ for every k</div><p>Expanding the quadratic form, the \(x^TΣ^{-1}x\) term is shared by all classes and cancels. The remaining score is linear:</p><div class="formula">δ<sub>k</sub>(x)=xᵀΣ⁻¹μ<sub>k</sub> − ½μ<sub>k</sub>ᵀΣ⁻¹μ<sub>k</sub> + log π<sub>k</sub></div></div><div class="mini"><b>QDA</b><div class="formula">Σ<sub>k</sub> may vary by class</div><p>The quadratic term depends on class \(k\), so it generally cannot be removed. The boundary is quadratic in \(x\).</p></div></div>
+<h3>Maximum-likelihood parameter estimates</h3><p>Let \(N_k\) be the number of training examples in class \(k\), and \(N\) the total.</p><div class="formula">π̂<sub>k</sub> = N<sub>k</sub>/N<br>μ̂<sub>k</sub> = (1/N<sub>k</sub>) ∑<sub>i:yᵢ=k</sub> xᵢ</div>
+<p>QDA estimates covariance within each class:</p><div class="formula">Σ̂<sub>k</sub> = (1/N<sub>k</sub>) ∑<sub>i:yᵢ=k</sub> (xᵢ−μ̂<sub>k</sub>)(xᵢ−μ̂<sub>k</sub>)ᵀ</div>
+<p>LDA pools within-class scatter and divides by \(N\) for the Gaussian maximum-likelihood estimate:</p><div class="formula">Σ̂ = (1/N) ∑<sub>k=1</sub><sup>K</sup> ∑<sub>i:yᵢ=k</sub> (xᵢ−μ̂<sub>k</sub>)(xᵢ−μ̂<sub>k</sub>)ᵀ</div>
+<p>Some software uses a degrees-of-freedom-adjusted covariance estimate instead, so check the convention.</p>
+<h3>Nearest centroid connection</h3><p>With equal class priors and shared isotropic covariance \(\Sigma=\sigma^2I\), maximizing the Gaussian class score is equivalent to minimizing squared Euclidean distance to the class mean. With general covariance, the relevant distance is Mahalanobis distance; priors can also shift the boundary.</p>
+<div class="quiz" data-answer="quadratic"><b>Quick check:</b> Why can QDA create curved boundaries?<div><button data-choice="linear">Because every class has the same covariance</button><button data-choice="quadratic">Class-specific quadratic terms do not generally cancel</button></div><div class="feedback"></div></div>
+</section>
+
+<div class="demo">
+<h2>Interactive demo: Gaussian decision boundaries</h2><p class="muted">A one-dimensional, two-class example. Each curve is the class likelihood multiplied by its prior; the prediction is whichever weighted density is higher. This is a conceptual simulator, not a reproduction of a textbook figure.</p>
+<div class="controls"><label>Model <select id="model"><option value="lda">LDA — shared variance</option><option value="qda">QDA — separate variances</option></select></label><label>Prior for class A <input id="prior" type="range" min="10" max="90" value="50"><span id="priorVal">50%</span></label><label>Variance of class B <input id="variance" type="range" min="4" max="30" value="16"><span id="varianceVal">16</span></label></div>
+<div class="stats"><div class="stat"><small>Class A mean</small><strong>−2</strong></div><div class="stat"><small>Class B mean</small><strong>2</strong></div><div class="stat"><small>Model assumption</small><strong id="assumption">Equal variances</strong></div></div>
+<div class="legend"><span><i class="dot" style="background:#2864dc"></i>Class A weighted density</span><span><i class="dot" style="background:#d97728"></i>Class B weighted density</span><span><i class="dot" style="background:#138477"></i>Decision boundary</span></div>
+<div class="chartbox"><svg class="chart" id="graph" viewBox="0 0 800 330" role="img" aria-label="Weighted Gaussian densities and classification boundary"></svg></div>
+<p id="demoText" class="muted"></p><div class="note"><b>Try this:</b> Switch to QDA and change class B’s variance. Then move the prior slider. Changing the prior can move the boundary even when the means stay fixed.</div>
+</div>
+<p class="end">Study checklist: Can you explain (1) likelihood vs. prior vs. posterior, (2) why shared covariance gives LDA a linear score, (3) why QDA is more flexible but estimates more parameters, and (4) how means and covariance matrices are estimated?</p>
+</main>
+<script>
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(t=>{t.classList.toggle('active',t===b);t.setAttribute('aria-selected',t===b?'true':'false')});document.querySelectorAll('.level').forEach(s=>s.classList.toggle('active',s.id===b.dataset.target))}));
+document.querySelectorAll('.quiz').forEach(q=>q.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{let f=q.querySelector('.feedback'),ok=b.dataset.choice===q.dataset.answer;f.textContent=ok?'Correct!':'Not quite—review the explanation and try again.';f.style.color=ok?'#138477':'#b54725'})));
+const model=document.getElementById('model'),prior=document.getElementById('prior'),variance=document.getElementById('variance'),graph=document.getElementById('graph');
+function density(x,m,v){return Math.exp(-.5*(x-m)*(x-m)/v)/Math.sqrt(2*Math.PI*v)}
+function render(){
+ let lda=model.value==='lda',p=+prior.value/100,va=16,vb=lda?16:+variance.value;
+ document.getElementById('priorVal').textContent=Math.round(p*100)+'%';document.getElementById('varianceVal').textContent=variance.value;document.getElementById('assumption').textContent=lda?'Equal variances':'Separate variances';
+ const W=800,H=330,L=48,R=18,T=22,B=42,iw=W-L-R,ih=H-T-B,xmin=-8,xmax=8,ymax=.24,px=x=>L+(x-xmin)/(xmax-xmin)*iw,py=y=>T+ih-y/ymax*ih;
+ let a=[],b=[],roots=[];for(let i=0;i<=400;i++){let x=xmin+(xmax-xmin)*i/400;a.push([x,p*density(x,-2,va)]);b.push([x,(1-p)*density(x,2,vb)]);if(i>0){let d0=a[i-1][1]-b[i-1][1],d1=a[i][1]-b[i][1];if(d0*d1<0){let x0=a[i-1][0],x1=a[i][0];roots.push(x0+(x1-x0)*Math.abs(d0)/(Math.abs(d0)+Math.abs(d1)))}}}
+ const path=arr=>arr.map((v,i)=>(i?'L':'M')+px(v[0]).toFixed(2)+','+py(v[1]).toFixed(2)).join(' ');let out='';
+ for(let y=0;y<=.20;y+=.05)out+=`<line x1="${L}" y1="${py(y)}" x2="${W-R}" y2="${py(y)}" stroke="#e6ebf2"/><text x="${L-8}" y="${py(y)+4}" font-size="11" text-anchor="end" fill="#657287">${y.toFixed(2)}</text>`;
+ for(let x=-8;x<=8;x+=2)out+=`<line x1="${px(x)}" y1="${T}" x2="${px(x)}" y2="${H-B}" stroke="#f0f2f6"/><text x="${px(x)}" y="${H-17}" font-size="11" text-anchor="middle" fill="#657287">${x}</text>`;
+ out+=`<path d="${path(a)}" fill="none" stroke="#2864dc" stroke-width="3"/><path d="${path(b)}" fill="none" stroke="#d97728" stroke-width="3"/>`;
+ roots.forEach(x=>out+=`<line x1="${px(x)}" y1="${T}" x2="${px(x)}" y2="${H-B}" stroke="#138477" stroke-width="2" stroke-dasharray="5 4"/><text x="${px(x)}" y="${T+12}" text-anchor="middle" font-size="11" fill="#138477">boundary</text>`);
+ out+=`<line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="#8b96a8"/><text x="${W/2}" y="${H-2}" font-size="12" text-anchor="middle" fill="#657287">Feature value x</text>`;graph.innerHTML=out;
+ document.getElementById('demoText').textContent=(lda?'LDA ties the variances, so the log-score difference is linear and has one boundary in this 1D example.':'QDA allows different variances. The curves can cross once or twice, so a class’s decision region may be bounded on both sides.')+(roots.length?' Boundary point(s): '+roots.map(x=>x.toFixed(2)).join(', ')+'.':' No boundary appears inside the displayed range.');
+}
+[model,prior,variance].forEach(el=>el.addEventListener('input',render));render();
+</script></body></html>

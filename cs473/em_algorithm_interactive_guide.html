@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Understanding the EM Algorithm — Three Levels</title>
+<style>
+:root{--ink:#182230;--muted:#5c6878;--paper:#f6f8fb;--card:#fff;--line:#dce3ec;--blue:#2864dc;--teal:#128477;--orange:#d97728;--purple:#805ad5}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:34px 20px 26px;background:#14233b;color:#fff}header .wrap,main{max-width:1050px;margin:auto}header p{color:#d8e2f2;max-width:760px;margin:8px 0 0}h1{font-size:clamp(1.8rem,4vw,2.7rem);line-height:1.15;margin:0}main{padding:22px 18px 60px}.intro{background:#eaf0ff;border:1px solid #cbd8ff;border-radius:14px;padding:16px 18px;margin-bottom:18px}
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.level-button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:13px;text-align:left;cursor:pointer;color:var(--ink)}.level-button strong{display:block}.level-button span{font-size:.86rem;color:var(--muted)}.level-button.active{border:2px solid var(--blue);background:#eef3ff}
+.section{display:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px;box-shadow:0 4px 16px #15233b0a}.section.active{display:block}h2{margin:0 0 8px;font-size:1.55rem}h3{margin:20px 0 6px;font-size:1.12rem}p{margin:8px 0}.muted{color:var(--muted)}.analogy{border-left:4px solid var(--teal);background:#edf9f7;padding:12px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.stepgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.step{border:1px solid var(--line);border-radius:12px;padding:14px}.step b{color:var(--blue)}.math{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#f1f4f8;border-radius:8px;padding:10px;overflow-wrap:anywhere}.quiz{border:1px dashed #aab7c9;border-radius:12px;padding:14px;margin-top:16px}.quiz button,.action{background:var(--blue);color:#fff;border:0;border-radius:9px;padding:9px 13px;cursor:pointer;font:inherit}.quiz button{margin:5px 5px 0 0}.feedback{font-weight:600;margin-top:8px}.demo{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:18px}.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0}.controls label{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.controls input{accent-color:var(--blue)}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.metric{background:#f2f5f9;border-radius:10px;padding:10px}.metric small{display:block;color:var(--muted)}.metric strong{font-size:1.2rem}.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.9rem}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}.chart-wrap{overflow-x:auto}svg{width:100%;min-width:300px;height:auto;display:block;background:#fbfcfe;border-radius:10px;border:1px solid #edf0f5}.callout{background:#fff6e8;border:1px solid #f5d8a9;padding:12px;border-radius:10px;margin-top:10px}.footer{color:var(--muted);font-size:.9rem;margin-top:20px}
+@media(max-width:720px){.levels{grid-template-columns:1fr}.stepgrid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>The EM Algorithm, from Intuition to Math</h1>
+<p>An interactive guide to Expectation–Maximization (EM), with three levels of explanation and a small Gaussian-mixture demo you can step through.</p>
+</div></header>
+<main>
+<div class="intro"><strong>The one-sentence idea:</strong> EM helps estimate model parameters when some information is hidden or missing. It alternates between <em>guessing the hidden information</em> using current parameters and <em>updating the parameters</em> using those guesses.</div>
+
+<div class="levels" role="tablist" aria-label="Choose explanation level">
+<button class="level-button active" data-target="high" role="tab" aria-selected="true"><strong>1. High-school level</strong><span>Intuition and analogy</span></button>
+<button class="level-button" data-target="middle" role="tab" aria-selected="false"><strong>2. Building intuition</strong><span>Steps and a worked example</span></button>
+<button class="level-button" data-target="college" role="tab" aria-selected="false"><strong>3. College level</strong><span>Responsibilities, likelihood, equations</span></button>
+</div>
+
+<section id="high" class="section active" role="tabpanel">
+<h2>Level 1: Imagine sorting mystery marbles</h2>
+<p>You have a pile of marbles from two machines. One machine usually makes small marbles; the other usually makes large ones. But the labels fell off, so you do not know which machine made each marble.</p>
+<div class="analogy"><strong>EM is a repeated two-step strategy:</strong><br>1. Make a best-available guess about which machine made each marble.<br>2. Use those guesses to improve your description of each machine.<br>Repeat until the guesses and descriptions stop changing much.</div>
+<div class="stepgrid">
+<div class="step"><b>Expectation step (E-step)</b><p>“Given what I currently believe about the machines, how likely is each marble to have come from each one?”</p></div>
+<div class="step"><b>Maximization step (M-step)</b><p>“Given those likely assignments, what machine sizes and proportions fit the marbles best?”</p></div>
+</div>
+<h3>Why not just assign each marble to one machine?</h3>
+<p>Because a marble in the middle could plausibly come from either machine. EM can use <em>soft assignments</em>: for example, 70% machine A and 30% machine B, rather than making an all-or-nothing guess.</p>
+<div class="quiz" data-answer="soft"><strong>Quick check:</strong> A data point could plausibly belong to either group. What does standard mixture-model EM usually do?</p>
+<button data-choice="hard">Force it into one group immediately</button><button data-choice="soft">Give each group a probability / responsibility</button><div class="feedback"></div></div>
+</section>
+
+<section id="middle" class="section" role="tabpanel">
+<h2>Level 2: The algorithm as a feedback loop</h2>
+<p>Suppose the data really came from two overlapping groups, but the group labels are hidden. We want to estimate each group's center, spread, and how common it is.</p>
+<div class="stepgrid">
+<div class="step"><b>1 — Start</b><p>Choose initial guesses for the group centers, spreads, and mixture weights. Initial guesses matter; poor starts can lead to a poor solution.</p></div>
+<div class="step"><b>2 — E-step</b><p>For every point, calculate its <em>responsibility</em>: the probability that each component generated it, given the current parameters.</p></div>
+<div class="step"><b>3 — M-step</b><p>Re-estimate the parameters, treating responsibilities as fractional membership weights.</p></div>
+<div class="step"><b>4 — Repeat</b><p>Recalculate responsibilities with the new parameters, then update again. Stop when changes are small or you hit an iteration limit.</p></div>
+</div>
+<h3>What the E-step is really asking</h3>
+<p>If a point lies near group A's center and far from group B's center, it receives a high responsibility for A. The probability also depends on each group's spread and how common that group is.</p>
+<h3>What the M-step is really asking</h3>
+<p>A group's new center becomes a weighted average: points with higher responsibility for that group count more. Its spread and mixture weight are updated from the same weighted memberships.</p>
+<div class="callout"><strong>Important:</strong> E and M are not two different models. They are alternating calculations that improve the same model's fit. With the standard exact EM updates, the observed-data log-likelihood does not decrease from one iteration to the next, although EM can converge to a local optimum rather than the global best solution.</div>
+<div class="quiz" data-answer="likelihood"><strong>Quick check:</strong> What is the usual goal of the iterations?</p>
+<button data-choice="labels">Make every assignment certain</button><button data-choice="likelihood">Increase (or at least not decrease) the observed-data likelihood</button><div class="feedback"></div></div>
+</section>
+
+<section id="college" class="section" role="tabpanel">
+<h2>Level 3: College-level formulation</h2>
+<p>Let observed data be \(X\), latent variables be \(Z\), and parameters be \(\theta\). We want to maximize the observed-data log-likelihood</p>
+<div class="math">ℓ(θ) = log p(X | θ) = log ∑<sub>Z</sub> p(X, Z | θ)</div>
+<p>(For continuous latent variables, replace the sum with an integral.) The log of a sum often makes direct optimization difficult. EM alternates between a posterior distribution over latent variables and a parameter update.</p>
+<h3>E-step: compute the posterior over latent variables</h3>
+<div class="math">q(Z) ← p(Z | X, θ<sup>old</sup>)</div>
+<p>Equivalently, form the auxiliary function</p>
+<div class="math">Q(θ, θ<sup>old</sup>) = E<sub>Z | X, θold</sub>[ log p(X, Z | θ) ]</div>
+<p>This is the expected <em>complete-data</em> log-likelihood, where the expectation uses the current parameter estimate.</p>
+<h3>M-step: maximize the expected complete-data log-likelihood</h3>
+<div class="math">θ<sup>new</sup> ← arg max<sub>θ</sub> Q(θ, θ<sup>old</sup>)</div>
+<p>Then repeat. Under the usual EM conditions, this update does not decrease the observed-data log-likelihood. The sequence typically converges to a stationary point, not necessarily the global maximum. Some models use a generalized EM step that merely increases Q rather than maximizing it exactly.</p>
+<h3>Example: Gaussian mixture model (GMM)</h3>
+<p>For point \(x_i\) and component \(k\), responsibility \(r_{ik}\) is the posterior probability that component \(k\) generated the point:</p>
+<div class="math">r<sub>ik</sub> = π<sub>k</sub> 𝒩(x<sub>i</sub> | μ<sub>k</sub>, σ<sub>k</sub>²) / ∑<sub>j</sub> π<sub>j</sub> 𝒩(x<sub>i</sub> | μ<sub>j</sub>, σ<sub>j</sub>²)</div>
+<p>Let \(N_k = \sum_i r_{ik}\). In one dimension, the M-step updates are:</p>
+<div class="math">μ<sub>k</sub> = (∑<sub>i</sub> r<sub>ik</sub>x<sub>i</sub>) / N<sub>k</sub><br>σ<sub>k</sub>² = (∑<sub>i</sub> r<sub>ik</sub>(x<sub>i</sub> − μ<sub>k</sub>)²) / N<sub>k</sub><br>π<sub>k</sub> = N<sub>k</sub> / n</div>
+<p>Notice the weighted averages: the hidden component labels are replaced by probabilities. This is the core trick that makes the updates possible.</p>
+<div class="quiz" data-answer="posterior"><strong>Quick check:</strong> In the E-step, what is held fixed?</p>
+<button data-choice="parameters">The responsibilities, while parameters change</button><button data-choice="posterior">The old parameters, while the latent-variable posterior is computed</button><div class="feedback"></div></div>
+</section>
+
+<div class="demo">
+<h2>Interactive demo: two hidden groups</h2>
+<p class="muted">This simplified one-dimensional Gaussian-mixture demo starts with two guessed centers. Step through EM and watch the centers and responsibilities adapt to the data. The data points are fixed; only the model changes.</p>
+<div class="controls">
+<button class="action" id="stepBtn">Run 1 EM iteration</button><button class="action" id="runBtn">Run 10 iterations</button><button id="resetBtn" style="background:#e8edf5;color:#182230" class="action">Reset</button>
+<label>Starting center A <input id="startA" type="range" min="5" max="45" value="15"><span id="startAVal">15</span></label>
+<label>Starting center B <input id="startB" type="range" min="55" max="95" value="80"><span id="startBVal">80</span></label>
+</div>
+<div class="metrics">
+<div class="metric"><small>Iteration</small><strong id="iter">0</strong></div>
+<div class="metric"><small>Center A</small><strong id="muA">15.0</strong></div>
+<div class="metric"><small>Center B</small><strong id="muB">80.0</strong></div>
+</div>
+<div class="legend"><span><i class="dot" style="background:#2864dc"></i>Group A responsibility</span><span><i class="dot" style="background:#d97728"></i>Group B responsibility</span><span>Circle size = assignment confidence</span></div>
+<div class="chart-wrap"><svg id="plot" viewBox="0 0 800 240" role="img" aria-label="Data points on a one-dimensional axis colored by their soft group responsibilities"></svg></div>
+<p id="explain" class="muted">At iteration 0, the centers are only initial guesses. Click “Run 1 EM iteration” to calculate responsibilities, then update the centers.</p>
+</div>
+
+<div class="footer">Study tip: First explain the E-step and M-step in plain language. Then connect the language to the GMM formulas: responsibilities are the E-step; weighted parameter updates are the M-step. This guide explains the standard EM idea in general terms rather than reproducing textbook text.</div>
+</main>
+<script>
+const tabs=[...document.querySelectorAll('.level-button')];
+tabs.forEach(b=>b.addEventListener('click',()=>{tabs.forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',x===b?'true':'false')});document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id===b.dataset.target))}));
+document.querySelectorAll('.quiz').forEach(q=>{q.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{const f=q.querySelector('.feedback');const ok=b.dataset.choice===q.dataset.answer;f.textContent=ok?'Correct! '+({soft:'Soft membership keeps uncertainty instead of prematurely forcing a label.',likelihood:'EM is designed to improve the observed-data likelihood at each exact iteration; certainty is not the objective.',posterior:'The E-step uses the old parameters to compute the latent-variable posterior.'}[q.dataset.answer]):'Not quite—review the explanation above and try again.';f.style.color=ok?'#128477':'#b54725'}))});
+const data=[12,17,19,22,24,27,29,31,34,37,40,43,46,55,58,61,64,68,71,74,77,81,84,87,90];
+const sigma=10, svg=document.getElementById('plot');let muA=15,muB=80,iter=0,resp=[];
+function gauss(x,m,s){return Math.exp(-.5*((x-m)/s)**2)/(s*Math.sqrt(2*Math.PI))}
+function estep(){resp=data.map(x=>{let a=.5*gauss(x,muA,sigma),b=.5*gauss(x,muB,sigma);return a/(a+b)})}
+function mstep(){let wa=0,wb=0,sa=0,sb=0;data.forEach((x,i)=>{wa+=resp[i];wb+=1-resp[i];sa+=resp[i]*x;sb+=(1-resp[i])*x});muA=sa/wa;muB=sb/wb}
+function draw(){estep();document.getElementById('iter').textContent=iter;document.getElementById('muA').textContent=muA.toFixed(1);document.getElementById('muB').textContent=muB.toFixed(1);let out='<line x1="35" y1="170" x2="765" y2="170" stroke="#8793a5" stroke-width="2"/>';for(let t=0;t<=100;t+=10){let x=35+t*7.3;out+=`<line x1="${x}" y1="166" x2="${x}" y2="176" stroke="#8793a5"/><text x="${x}" y="196" font-size="12" fill="#5c6878" text-anchor="middle">${t}</text>`}data.forEach((v,i)=>{let x=35+v*7.3,y=125-(i%4)*22;let r=resp[i],color=`rgb(${Math.round(40*r+217*(1-r))},${Math.round(100*r+119*(1-r))},${Math.round(220*r+40*(1-r))})`;out+=`<circle cx="${x}" cy="${y}" r="${4+4*Math.max(r,1-r)}" fill="${color}" fill-opacity=".9" stroke="#fff" stroke-width="1.5"><title>x=${v}, responsibility A=${r.toFixed(2)}, B=${(1-r).toFixed(2)}</title></circle>`});out+=`<line x1="${35+muA*7.3}" y1="25" x2="${35+muA*7.3}" y2="170" stroke="#2864dc" stroke-width="2" stroke-dasharray="5 4"/><text x="${35+muA*7.3}" y="18" fill="#2864dc" text-anchor="middle" font-size="13">A ${muA.toFixed(1)}</text><line x1="${35+muB*7.3}" y1="25" x2="${35+muB*7.3}" y2="170" stroke="#d97728" stroke-width="2" stroke-dasharray="5 4"/><text x="${35+muB*7.3}" y="18" fill="#d97728" text-anchor="middle" font-size="13">B ${muB.toFixed(1)}</text>`;svg.innerHTML=out}
+function step(){estep();mstep();iter++;draw();document.getElementById('explain').textContent='Iteration '+iter+': the E-step computed soft memberships using the previous centers; the M-step moved each center to the weighted average of the data. Keep iterating to see the centers stabilize.'}
+function reset(){muA=+document.getElementById('startA').value;muB=+document.getElementById('startB').value;iter=0;draw();document.getElementById('explain').textContent='At iteration 0, the centers are only initial guesses. Click “Run 1 EM iteration” to calculate responsibilities, then update the centers.'}
+document.getElementById('stepBtn').addEventListener('click',step);document.getElementById('runBtn').addEventListener('click',()=>{for(let i=0;i<10;i++)step()});document.getElementById('resetBtn').addEventListener('click',reset);
+['startA','startB'].forEach(id=>document.getElementById(id).addEventListener('input',e=>{document.getElementById(id+'Val').textContent=e.target.value;reset()}));draw();
+</script>
+</body></html>
