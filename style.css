@@ -80,6 +80,20 @@ h3 { margin: 0 0 5px; font-size: 22px; letter-spacing: -.025em; }
 .tags { display: flex; flex-wrap: wrap; gap: 7px; margin: 24px 0 22px; }
 .tags span { border: 1px solid var(--line); border-radius: 100px; padding: 4px 9px; font: 10px "DM Mono", monospace; color: var(--muted); }
 .project-link { margin-top: auto; align-self: flex-start; color: var(--accent); font-size: 12px; font-family: "DM Mono", monospace; }
+.projects-more { margin-top: 28px; }
+.projects-hero { padding: 100px 0 70px; }
+.projects-hero h1 { font-size: clamp(42px, 6vw, 68px); }
+.project-list { border-top: 1px solid var(--line); }
+.project-detail {
+  display: grid; grid-template-columns: 220px 1fr; gap: 48px;
+  padding: 34px 0; border-bottom: 1px solid var(--line);
+}
+.project-detail .project-top { margin: 0; flex-direction: column; gap: 10px; }
+.project-detail .project-top span:last-child { text-align: left; }
+.project-detail h2 { font-size: 26px; margin-bottom: 10px; }
+.project-detail p { color: var(--muted); margin: 0; max-width: 760px; }
+.project-detail .tags { margin: 18px 0; }
+.project-detail .project-link { margin-top: 0; }
 .skills-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
 .skills-grid > div { background: var(--surface); padding: 30px; min-height: 150px; }
 .skills-grid h3 { font-size: 15px; }
@@ -104,6 +118,7 @@ h3 { margin: 0 0 5px; font-size: 22px; letter-spacing: -.025em; }
   .two-col { gap: 30px; }
   .section { padding: 85px 0; }
   .experience-card { grid-template-columns: 1fr; gap: 15px; }
+  .project-detail { grid-template-columns: 1fr; gap: 18px; }
   .project { min-height: 310px; }
   .footer .container { flex-direction: column; }
 }
