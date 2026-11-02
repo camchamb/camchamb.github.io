@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PML1 §17.3.5–17.4: SVM extras and sparse vector machines</title>
+<style>
+:root{--bg:#fafaf7;--fg:#1c1c1a;--mut:#6b6b66;--card:#fff;--line:#dcdcd4;--c0:#2f6fdb;--c1:#e0622b;--c2:#2a9d6a;--ac:#7a3fd0;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181a;--fg:#ececE6;--mut:#9a9a94;--card:#202225;--line:#3a3c40;--c0:#6fa0ff;--c1:#ff8f5e;--c2:#4fd195;--ac:#b48cff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17181a;--fg:#ececE6;--mut:#9a9a94;--card:#202225;--line:#3a3c40;--c0:#6fa0ff;--c1:#ff8f5e;--c2:#4fd195;--ac:#b48cff;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:860px;margin:0 auto;padding:18px 14px 40px}
+h1{font-size:21px;margin:0 0 4px}h2{font-size:18px;margin:6px 0}
+p{margin:8px 0}.mut{color:var(--mut);font-size:13px}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0}
+nav button,.btn{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer}
+nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.sec{display:none;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.sec.on{display:block}
+canvas{width:100%;height:300px;display:block;margin:8px 0;border:1px solid var(--line);border-radius:8px}
+.sl{display:block;margin:6px 0;font-size:13px}.sl input{width:100%}
+.out{font:13px ui-monospace,Menlo,monospace;background:var(--bg);border-radius:8px;padding:8px;margin:6px 0;overflow-x:auto}
+.why{border-left:3px solid var(--ac);padding:2px 10px;margin:10px 0;font-size:14px}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+code{font-family:ui-monospace,Menlo,monospace;font-size:13px}
+</style></head><body><main>
+<h1>Murphy, <em>Probabilistic ML: An Introduction</em> — §17.3.5–17.3.8 and §17.4</h1>
+<p class="mut">Assumed section map (PML1 numbering): 17.3.5 SVM outputs → probabilities · 17.3.6 link to logistic regression · 17.3.7 multi-class SVMs · 17.3.8 choosing C · 17.4 sparse vector machines (RVM, and sparse vs. dense kernel methods). Every figure is live: drag the sliders.</p>
+<nav id="nav"></nav>
+
+<section class="sec" id="s0">
+<h2>17.3.5 Turning SVM scores into probabilities</h2>
+<p>An SVM outputs a score f(x), not a probability. Platt scaling fits p(y=1|f)=σ(A·f+B) on held-out scores. Orange = class 1, blue = class 0.</p>
+<div id="c0"></div><canvas id="cv0"></canvas><div class="row"><button class="btn" id="fit0">Fit A, B by maximum likelihood</button></div><div class="out" id="o0"></div>
+<div class="why"><b>Why it works:</b> the SVM only cares about points near the margin, so f is a signed distance-like quantity with an arbitrary scale. A logistic map on top fixes the scale (A) and the offset (B). Fit it on data the SVM was not trained on: on training data the support vectors sit at |f|≈1 and the scores look overconfident.</div>
+</section>
+
+<section class="sec" id="s1">
+<h2>17.3.6 SVM vs. logistic regression: the loss view</h2>
+<p>With margin m = y·f(x), the SVM minimises the hinge loss (plus ‖w‖²) and logistic regression minimises log(1+e<sup>−m</sup>). Move the margin and compare.</p>
+<div id="c1"></div><canvas id="cv1"></canvas><div class="out" id="o1"></div>
+<div class="why"><b>Why it matters:</b> both are convex upper bounds on the 0‑1 loss. The hinge is exactly zero once m≥1, so those points have zero gradient and drop out of the solution. That is what makes the SVM solution sparse in the dual (only support vectors have α&gt;0). The logistic loss never reaches zero, so every point keeps pulling, and the result is naturally probabilistic.</div>
+</section>
+
+<section class="sec" id="s2">
+<h2>17.3.7 Multi-class: one-vs-rest</h2>
+<p>Train K binary classifiers f<sub>k</sub>(x)=w<sub>k</sub>·x+b and see where they agree. Gray = no classifier fires, black hatch = several fire (ambiguous).</p>
+<div id="c2"></div><label class="sl"><input type="checkbox" id="am"> resolve with argmax f<sub>k</sub> (the standard fix)</label><canvas id="cv2"></canvas><div class="out" id="o2"></div>
+<div class="why"><b>Why it fails:</b> each f<sub>k</sub> is trained independently, so nothing forces exactly one to be positive. Argmax removes the holes, but the scores of different classifiers were never calibrated against each other (see 17.3.5), which is a reason to prefer probabilistic outputs or a proper multi-class loss.</div>
+</section>
+
+<section class="sec" id="s3">
+<h2>17.3.8 Choosing C (and the kernel width)</h2>
+<p>RBF-SVM on noisy two-moons data (60 train points with ~8% flipped labels, 200 validation points). Circled points are support vectors.</p>
+<div id="c3"></div>
+<div class="row"><button class="btn" data-p="-1.5,-1.5">Underfit</button><button class="btn" data-p="1,0.3">Reasonable</button><button class="btn" data-p="3,1.5">Overfit</button></div>
+<canvas id="cv3"></canvas><div class="out" id="o3"></div>
+<p class="mut">Validation error vs. C at the current γ (this is what cross-validation scans):</p><canvas id="cv3b" style="height:200px"></canvas>
+<div class="why"><b>Why:</b> C weights the slack penalty. Small C tolerates margin violations, giving a wide margin, many support vectors and a smooth boundary (high bias). Large C punishes every violation, so the boundary bends around noisy points (high variance). γ interacts with C: a large γ makes the kernel local and more flexible, so the best C shifts. Pick them jointly by cross-validation, usually on a log grid as in the lower plot.</div>
+</section>
+
+<section class="sec" id="s4">
+<h2>17.4 Sparse vector machines: the RVM</h2>
+<p>RVM = Bayesian linear model on RBF basis functions centred at every training point, with a separate Gaussian prior precision α<sub>i</sub> per weight (ARD). Evidence maximisation drives most α<sub>i</sub>→∞, which prunes those basis functions. Dashed = true sinc, solid = RVM mean ±2 s.d., green = dense kernel ridge regression, circles = relevance vectors.</p>
+<div id="c4"></div><label class="sl"><input type="checkbox" id="kr" checked> show dense kernel ridge (λ=σ²)</label><canvas id="cv4"></canvas><div class="out" id="o4"></div>
+<div class="why"><b>Why it is sparse (17.4.1):</b> for each weight, the marginal likelihood prefers α<sub>i</sub>=∞ unless the basis function explains something the others cannot. This automatic relevance determination is the Bayesian answer to the SVM’s hinge-loss sparsity. <b>Comparison (17.4.2):</b> RVMs are usually much sparser than SVMs and give predictive variances, but training is non-convex and costs O(M³) per iteration, and relevance vectors tend to sit away from the decision boundary, while SVM support vectors sit on it. Note how the band widens where no relevance vector is nearby.</div>
+</section>
+
+<script>
+const $=s=>document.querySelector(s),css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const sig=z=>1/(1+Math.exp(-z));
+function rng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const gauss=r=>Math.sqrt(-2*Math.log(r()+1e-12))*Math.cos(2*Math.PI*r());
+function S(id,label,min,max,step,val){return `<label class="sl"><span>${label}: <b id="v_${id}"></b></span><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"></label>`}
+const val=id=>+$('#'+id).value;
+function wire(ids,fn,fmt={}){ids.forEach(id=>{const e=$('#'+id),u=()=>{$('#v_'+id).textContent=fmt[id]?fmt[id](+e.value):(+e.value).toFixed(2)};u();e.addEventListener('input',()=>{u();fn()})})}
+function setS(id,v){$('#'+id).value=v;$('#'+id).dispatchEvent(new Event('input'))}
+function frame(c,xr,yr){
+  const r=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;c.width=w*r;c.height=h*r;
+  const g=c.getContext('2d');g.setTransform(r,0,0,r,0,0);
+  const p={l:36,r:10,t:10,b:24},pw=w-p.l-p.r,ph=h-p.t-p.b;
+  const X=x=>p.l+(x-xr[0])/(xr[1]-xr[0])*pw,Y=y=>h-p.b-(y-yr[0])/(yr[1]-yr[0])*ph;
+  const iX=px=>xr[0]+(px-p.l)/pw*(xr[1]-xr[0]),iY=py=>yr[0]+(h-p.b-py)/ph*(yr[1]-yr[0]);
+  g.font='11px system-ui';g.lineWidth=1;g.textAlign='center';
+  for(let i=0;i<=4;i++){const x=xr[0]+i*(xr[1]-xr[0])/4;g.strokeStyle=css('--line');g.beginPath();g.moveTo(X(x),p.t);g.lineTo(X(x),h-p.b);g.stroke();g.fillStyle=css('--mut');g.fillText(+x.toFixed(2),X(x),h-8)}
+  g.textAlign='right';
+  for(let i=0;i<=3;i++){const y=yr[0]+i*(yr[1]-yr[0])/3;g.strokeStyle=css('--line');g.beginPath();g.moveTo(p.l,Y(y));g.lineTo(w-p.r,Y(y));g.stroke();g.fillStyle=css('--mut');g.fillText(+y.toFixed(2),p.l-4,Y(y)+4)}
+  const F={g,w,h,p,X,Y,iX,iY,
+    line(pts,col,wd=2,dash=[]){g.strokeStyle=css(col);g.lineWidth=wd;g.setLineDash(dash);g.beginPath();pts.forEach((q,i)=>i?g.lineTo(X(q[0]),Y(q[1])):g.moveTo(X(q[0]),Y(q[1])));g.stroke();g.setLineDash([])},
+    dot(x,y,col,rad=4,a=.8){g.globalAlpha=a;g.fillStyle=css(col);g.beginPath();g.arc(X(x),Y(y),rad,0,7);g.fill();g.globalAlpha=1},
+    ring(x,y,rad=7){g.strokeStyle=css('--fg');g.lineWidth=1.3;g.beginPath();g.arc(X(x),Y(y),rad,0,7);g.stroke()},
+    clip(){g.save();g.beginPath();g.rect(p.l,p.t,pw,ph);g.clip()}};
+  return F}
+
+/* ---------- 17.3.5 Platt scaling ---------- */
+$('#c0').innerHTML=S('A','A (slope)',-1,6,.05,1)+S('B','B (offset)',-3,3,.05,0);
+const r0=rng(7),D0=Array.from({length:70},()=>{const y=r0()<.5?1:0;return{y,f:(y?1:-1)*.8+1.1*gauss(r0),j:r0()}});
+function nll0(A,B){return -D0.reduce((s,d)=>{const p=Math.min(1-1e-9,Math.max(1e-9,sig(A*d.f+B)));return s+(d.y?Math.log(p):Math.log(1-p))},0)/D0.length}
+function d0(){const F=frame($('#cv0'),[-4,4],[-.05,1.05]),A=val('A'),B=val('B');
+  F.line([[-4,.5],[4,.5]],'--mut',1,[4,4]);
+  const pts=[];for(let x=-4;x<=4.01;x+=.1)pts.push([x,sig(A*x+B)]);F.line(pts,'--ac',2.5);
+  D0.forEach(d=>F.dot(d.f,d.y?.93+d.j*.04:.03+d.j*.04,d.y?'--c1':'--c0'));
+  $('#o0').textContent=`p(y=1|f)=σ(${A.toFixed(2)}·f ${B<0?'−':'+'} ${Math.abs(B).toFixed(2)})   NLL=${nll0(A,B).toFixed(3)}   p=0.5 at f=${A?(-B/A).toFixed(2):'—'}   p(f=1)=${sig(A+B).toFixed(2)}`}
+wire(['A','B'],d0);
+$('#fit0').onclick=()=>{let A=1,B=0;for(let i=0;i<800;i++){let gA=0,gB=0;D0.forEach(d=>{const e=sig(A*d.f+B)-d.y;gA+=e*d.f;gB+=e});A-=gA/D0.length;B-=gB/D0.length}setS('A',Math.max(-1,Math.min(6,A)).toFixed(2));setS('B',Math.max(-3,Math.min(3,B)).toFixed(2))};
+
+/* ---------- 17.3.6 losses ---------- */
+$('#c1').innerHTML=S('m','margin m = y·f(x)',-3,3,.05,-.5);
+const hinge=m=>Math.max(0,1-m),logi=m=>Math.log(1+Math.exp(-m))/Math.LN2;
+function d1(){const F=frame($('#cv1'),[-3,3],[0,3.2]),m=val('m'),xs=[];for(let x=-3;x<=3.01;x+=.05)xs.push(x);
+  F.line(xs.map(x=>[x,x<0?1:0]),'--mut',1.5,[5,3]);F.line(xs.map(x=>[x,hinge(x)]),'--c1',2.5);F.line(xs.map(x=>[x,logi(x)]),'--c0',2.5);
+  F.line([[m,0],[m,3.2]],'--ac',1.2,[3,3]);F.dot(m,hinge(m),'--c1',5,1);F.dot(m,logi(m),'--c0',5,1);
+  F.g.textAlign='left';F.g.fillStyle=css('--c1');F.g.fillText('hinge',F.X(-2.9),F.Y(3));F.g.fillStyle=css('--c0');F.g.fillText('logistic (÷ln2)',F.X(-2.9),F.Y(2.7));F.g.fillStyle=css('--mut');F.g.fillText('0‑1 (dashed)',F.X(-2.9),F.Y(2.4));
+  $('#o1').textContent=`m=${m.toFixed(2)}  0‑1=${m<0?1:0}  hinge=${hinge(m).toFixed(3)} (dL/dm=${m<1?-1:0})  logistic=${logi(m).toFixed(3)} (dL/dm=${(-sig(-m)/Math.LN2).toFixed(3)})`}
+wire(['m'],d1);
+
+/* ---------- 17.3.7 one-vs-rest ---------- */
+$('#c2').innerHTML=S('b','shared bias b',-1.5,1.5,.05,-.3)+S('rot','rotate classifier 3 (degrees)',-60,60,1,0);
+const hue=['--c0','--c1','--c2'];
+function d2(){const F=frame($('#cv2'),[-3,3],[-3,3]),{g}=F,b=val('b'),rot=val('rot')*Math.PI/180,am=$('#am').checked;
+  const W=[90,210,330].map((a,k)=>{const t=a*Math.PI/180+(k==2?rot:0);return[Math.cos(t),Math.sin(t)]});
+  let none=0,multi=0,tot=0;
+  for(let px=F.p.l;px<F.w-F.p.r;px+=5)for(let py=F.p.t;py<F.h-F.p.b;py+=5){
+    const x=F.iX(px+2.5),y=F.iY(py+2.5),f=W.map(w=>w[0]*x+w[1]*y+b),on=f.map((v,k)=>v>0?k:-1).filter(k=>k>=0);tot++;
+    let col,a=.35;
+    if(am){col=hue[f.indexOf(Math.max(...f))]}
+    else if(on.length==1)col=hue[on[0]];
+    else if(on.length==0){col='--mut';a=.18;none++}else{col='--fg';a=.45;multi++}
+    g.globalAlpha=a;g.fillStyle=css(col);g.fillRect(px,py,5,5)}
+  g.globalAlpha=1;F.clip();
+  W.forEach((w,k)=>{const x0=-b*w[0],y0=-b*w[1],d=[-w[1],w[0]];F.line([[x0-9*d[0],y0-9*d[1]],[x0+9*d[0],y0+9*d[1]]],hue[k],2);F.line([[x0,y0],[x0+.6*w[0],y0+.6*w[1]]],hue[k],3)});
+  g.restore();
+  $('#o2').textContent=`no class: ${(100*none/tot).toFixed(0)}% of plane   ambiguous (≥2 classes): ${(100*multi/tot).toFixed(0)}%   (argmax: 0% each)   thick tick = positive side of f_k`}
+wire(['b','rot'],d2);$('#am').onchange=d2;
+
+/* ---------- 17.3.8 choosing C ---------- */
+$('#c3').innerHTML=S('lc','log10 C',-2,3,.1,1)+S('lg','log10 γ (RBF: exp(−γ‖x−x′‖²))',-2,2,.1,.3);
+const r3=rng(11);
+function moons(n,noise,flip){return Array.from({length:n},(_,i)=>{const y=i%2?1:-1,t=Math.PI*r3();let x=y<0?Math.cos(t):1-Math.cos(t),z=y<0?Math.sin(t):.5-Math.sin(t);x+=noise*gauss(r3);z+=noise*gauss(r3);return{x,z,y:r3()<flip?-y:y}})}
+const TR=moons(60,.22,.08),VA=moons(200,.22,0);
+const kr=(a,b,g)=>Math.exp(-g*((a.x-b.x)**2+(a.z-b.z)**2));
+function trainSVM(C,g,ep=200){const n=TR.length,K=TR.map(a=>TR.map(b=>kr(a,b,g)+1)),al=new Array(n).fill(0),f=new Array(n).fill(0);
+  for(let e=0;e<ep;e++)for(let i=0;i<n;i++){const na=Math.min(C,Math.max(0,al[i]-(TR[i].y*f[i]-1)/K[i][i])),d=na-al[i];if(d){al[i]=na;for(let j=0;j<n;j++)f[j]+=d*TR[i].y*K[i][j]}}
+  return{al,pred:p=>TR.reduce((s,t,j)=>s+(al[j]>1e-8?al[j]*t.y*(kr(t,p,g)+1):0),0)}}
+const err=(m,D)=>D.filter(d=>m.pred(d)*d.y<=0).length/D.length;
+function d3(){const C=10**val('lc'),g=10**val('lg'),F=frame($('#cv3'),[-1.6,2.6],[-1.2,1.7]),m=trainSVM(C,g);
+  for(let px=F.p.l;px<F.w-F.p.r;px+=6)for(let py=F.p.t;py<F.h-F.p.b;py+=6){F.g.globalAlpha=.3;F.g.fillStyle=css(m.pred({x:F.iX(px+3),z:F.iY(py+3)})>0?'--c1':'--c0');F.g.fillRect(px,py,6,6)}
+  F.g.globalAlpha=1;TR.forEach((t,j)=>{F.dot(t.x,t.z,t.y>0?'--c1':'--c0',4,1);if(m.al[j]>1e-8)F.ring(t.x,t.z)});
+  const nsv=m.al.filter(a=>a>1e-8).length;
+  $('#o3').textContent=`C=${C.toPrecision(3)} γ=${g.toPrecision(3)}  #SV=${nsv}/60  train err=${(100*err(m,TR)).toFixed(0)}%  val err=${(100*err(m,VA)).toFixed(1)}%`;
+  const G=frame($('#cv3b'),[-2,3],[0,.5]),xs=[],tr=[],va=[];
+  for(let lc=-2;lc<=3.01;lc+=.25){const mm=trainSVM(10**lc,g,100);xs.push(lc);tr.push([lc,err(mm,TR)]);va.push([lc,err(mm,VA)])}
+  G.line(tr,'--c0',2);G.line(va,'--c1',2.5);G.line([[val('lc'),0],[val('lc'),.5]],'--ac',1.2,[3,3]);
+  G.g.textAlign='left';G.g.fillStyle=css('--c0');G.g.fillText('train error',G.X(-1.9),G.Y(.47));G.g.fillStyle=css('--c1');G.g.fillText('validation error (x-axis: log10 C)',G.X(-1.9),G.Y(.42))}
+wire(['lc','lg'],d3);
+document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const[a,c]=b.dataset.p.split(',');setS('lc',a);setS('lg',c)});
+
+/* ---------- 17.4 RVM ---------- */
+$('#c4').innerHTML=S('rw','basis width r',.5,4,.1,1.6)+S('sn','noise s.d. σ',.03,.5,.01,.1);
+const r4=rng(5),N4=30,XT=Array.from({length:N4},(_,i)=>-10+20*(i+.5)/N4+(r4()-.5)*.4),sinc=x=>Math.abs(x)<1e-6?1:Math.sin(x)/x,TT=XT.map(x=>sinc(x)+.1*gauss(r4));
+function inv(A){const n=A.length,M=A.map((r,i)=>[...r,...Array.from({length:n},(_,j)=>+(i==j))]);
+  for(let i=0;i<n;i++){let p=i;for(let r=i+1;r<n;r++)if(Math.abs(M[r][i])>Math.abs(M[p][i]))p=r;[M[i],M[p]]=[M[p],M[i]];const d=M[i][i];for(let j=0;j<2*n;j++)M[i][j]/=d;for(let r=0;r<n;r++)if(r!=i){const f=M[r][i];if(f)for(let j=0;j<2*n;j++)M[r][j]-=f*M[i][j]}}
+  return M.map(r=>r.slice(n))}
+function d4(){const r=val('rw'),s2=val('sn')**2,k=(a,b)=>Math.exp(-((a-b)**2)/(2*r*r)),F=frame($('#cv4'),[-10,10],[-.6,1.4]);
+  const phi=x=>[1,...XT.map(c=>k(x,c))],P=XT.map(phi);
+  let act=[...Array(N4+1).keys()],al=act.map(()=>1),S_,mu;
+  const solve=()=>{const M=act.length,A=Array.from({length:M},(_,i)=>Array.from({length:M},(_,j)=>{let s=0;for(let n=0;n<N4;n++)s+=P[n][act[i]]*P[n][act[j]];return s/s2+(i==j?al[i]:0)}));
+    S_=inv(A);mu=act.map((_,i)=>{let s=0;for(let j=0;j<M;j++){let q=0;for(let n=0;n<N4;n++)q+=P[n][act[j]]*TT[n];s+=S_[i][j]*q/s2}return s})};
+  for(let it=0;it<150;it++){solve();const nal=al.map((a,i)=>(1-a*S_[i][i])/(mu[i]**2+1e-12));
+    const keep=nal.map((a,i)=>a<1e8&&isFinite(a)?i:-1).filter(i=>i>=0);if(!keep.length)break;act=keep.map(i=>act[i]);al=keep.map(i=>nal[i])}
+  solve();
+  const xs=[];for(let x=-10;x<=10.01;x+=.1)xs.push(x);
+  const mean=[],hi=[],lo=[];xs.forEach(x=>{const f=phi(x),ph=act.map(i=>f[i]);let m=0,v=s2;ph.forEach((a,i)=>{m+=a*mu[i];ph.forEach((b,j)=>v+=a*b*S_[i][j])});const sd=Math.sqrt(v);mean.push([x,m]);hi.push([x,m+2*sd]);lo.push([x,m-2*sd])});
+  F.g.globalAlpha=.18;F.g.fillStyle=css('--ac');F.g.beginPath();hi.forEach((q,i)=>i?F.g.lineTo(F.X(q[0]),F.Y(q[1])):F.g.moveTo(F.X(q[0]),F.Y(q[1])));lo.slice().reverse().forEach(q=>F.g.lineTo(F.X(q[0]),F.Y(q[1])));F.g.fill();F.g.globalAlpha=1;
+  F.line(xs.map(x=>[x,sinc(x)]),'--mut',1.5,[5,4]);
+  if($('#kr').checked){const Ki=inv(XT.map((a,i)=>XT.map((b,j)=>k(a,b)+(i==j?s2:0)))),al2=Ki.map(row=>row.reduce((s,v,j)=>s+v*TT[j],0));F.line(xs.map(x=>[x,XT.reduce((s,c,j)=>s+al2[j]*k(x,c),0)]),'--c2',1.8)}
+  F.line(mean,'--ac',2.5);XT.forEach((x,i)=>F.dot(x,TT[i],'--c0',3.5,.8));
+  act.filter(i=>i>0).forEach(i=>F.ring(XT[i-1],TT[i-1]));
+  $('#o4').textContent=`RVM keeps ${act.length} of ${N4+1} basis functions (${act.includes(0)?'incl.':'excl.'} bias); relevance vectors circled: ${act.filter(i=>i>0).length}/${N4}. Kernel ridge uses all ${N4}.`}
+wire(['rw','sn'],d4);$('#kr').onchange=d4;
+
+/* ---------- tabs ---------- */
+const draws=[d0,d1,d2,d3,d4],names=['17.3.5 Platt','17.3.6 Losses','17.3.7 Multi-class','17.3.8 Choosing C','17.4 RVM'];
+names.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>show(i);$('#nav').appendChild(b)});
+let cur=0;function show(i){cur=i;document.querySelectorAll('.sec').forEach((s,j)=>s.classList.toggle('on',j==i));[...$('#nav').children].forEach((b,j)=>b.classList.toggle('on',j==i));draws[i]()}
+addEventListener('resize',()=>draws[cur]());
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>draws[cur]());
+show(0);
+</script></main></body></html>
