@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PML1 §18.1–18.2: Decision trees and ensemble learning</title>
+<style>
+:root{--bg:#fafaf7;--fg:#1c1c1a;--mut:#6b6b66;--card:#fff;--line:#dcdcd4;--c0:#2f6fdb;--c1:#e0622b;--c2:#2a9d6a;--ac:#7a3fd0;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181a;--fg:#ececE6;--mut:#9a9a94;--card:#202225;--line:#3a3c40;--c0:#6fa0ff;--c1:#ff8f5e;--c2:#4fd195;--ac:#b48cff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17181a;--fg:#ececE6;--mut:#9a9a94;--card:#202225;--line:#3a3c40;--c0:#6fa0ff;--c1:#ff8f5e;--c2:#4fd195;--ac:#b48cff;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:860px;margin:0 auto;padding:18px 14px 40px}
+h1{font-size:21px;margin:0 0 4px}h2{font-size:18px;margin:6px 0}
+p{margin:8px 0}.mut{color:var(--mut);font-size:13px}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0}
+nav button,.btn,select{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer}
+nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.sec{display:none;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.sec.on{display:block}
+canvas{width:100%;height:300px;display:block;margin:8px 0;border:1px solid var(--line);border-radius:8px}
+canvas.s{height:190px}
+.sl{display:block;margin:6px 0;font-size:13px}.sl input[type=range]{width:100%}
+.out{font:13px ui-monospace,Menlo,monospace;background:var(--bg);border-radius:8px;padding:8px;margin:6px 0;overflow-x:auto}
+.why{border-left:3px solid var(--ac);padding:2px 10px;margin:10px 0;font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0;align-items:center;font-size:13px}
+</style></head><body><main>
+<h1>Murphy, <em>Probabilistic ML: An Introduction</em> — §18.1 and §18.2</h1>
+<p class="mut">Assumed section map (PML1 numbering): 18.1 Classification and regression trees (18.1.1 model, 18.1.2 fitting, 18.1.3 regularization, 18.1.4 missing inputs, 18.1.5 pros and cons) · 18.2 Ensemble learning (18.2.1 stacking, 18.2.2 ensembling is not Bayes model averaging). Orange = class 1, blue = class 0.</p>
+<nav id="nav"></nav>
+
+<section class="sec" id="s0">
+<h2>18.1.1 Model: a tree is a piecewise-constant function</h2>
+<p>A regression tree partitions input space into axis-aligned regions R<sub>j</sub> and predicts a constant in each: f(x)=Σ<sub>j</sub> w<sub>j</sub>·1(x∈R<sub>j</sub>). Here w<sub>j</sub> is the mean of the training y in the region. Dashed curve = true function.</p>
+<div id="c0"></div><canvas id="cv0"></canvas><div class="out" id="o0"></div>
+<div class="why"><b>Why:</b> each internal node asks one question, “is x<sub>d</sub> ≤ t?”, so a root-to-leaf path is a conjunction of such tests, which is exactly one rectangle. Depth D gives at most 2<sup>D</sup> regions. More regions means a closer fit to the training data, up to one leaf per point.</div>
+</section>
+
+<section class="sec" id="s1">
+<h2>18.1.2 Fitting: greedy split search</h2>
+<p>Finding the best tree is NP-complete, so CART grows it greedily. At each node, pick the feature d and threshold t that minimise the weighted impurity of the two children: cost = (|D<sub>L</sub>|/|D|)·H(D<sub>L</sub>) + (|D<sub>R</sub>|/|D|)·H(D<sub>R</sub>). Drag the threshold and watch the cost.</p>
+<div class="row">feature <select id="ft"><option value="0">x₁</option><option value="1">x₂</option></select> impurity H <select id="cr"><option value="gini">Gini</option><option value="entropy">entropy</option><option value="mis">misclassification</option></select> <button class="btn" id="bst">jump to best split</button></div>
+<div id="c1"></div><canvas id="cv1a"></canvas><canvas id="cv1b" class="s"></canvas><div class="out" id="o1"></div>
+<div class="why"><b>Why greedy works at all:</b> sorting a feature once lets you score every candidate threshold with running class counts, so one node costs O(d·n log n). <b>Why Gini or entropy, not error rate:</b> try “misclassification”. Its curve is flat over wide ranges, so many splits tie even when one clearly purifies the children. Gini and entropy are strictly concave in p, so they reward any split that makes a child purer, even when the majority class doesn’t change.</div>
+</section>
+
+<section class="sec" id="s2">
+<h2>18.1.3 Regularization: how big should the tree be?</h2>
+<p>A fully grown tree reaches zero training error by memorising noise. Limit depth, or require a minimum leaf size (both are forms of early stopping). Cost-complexity pruning, the other option in the text, grows the full tree and then removes the least useful splits.</p>
+<div id="c2"></div><canvas id="cv2a"></canvas><canvas id="cv2b" class="s"></canvas><div class="out" id="o2"></div>
+<div class="why"><b>Why:</b> training error only goes down as the tree grows. Validation error drops, then rises once leaves start fitting individual noisy points (the jagged islands in the boundary). The best size sits at the bottom of that U-curve, and a bigger minimum leaf size smooths the boundary at any depth.</div>
+</section>
+
+<section class="sec" id="s3">
+<h2>18.1.4 Handling missing input features</h2>
+<p>Suppose x is observed except for one feature. A depth-3 tree is fitted below. Two standard remedies when a node tests the missing feature: <b>fractional</b> (follow both branches, weighted by the fraction of training data that went each way) or <b>surrogate splits</b> (use another feature whose split best mimics the primary split on the training set).</p>
+<div id="c3"></div><div class="row">missing <select id="ms"><option value="-1">none</option><option value="0">x₁</option><option value="1">x₂</option></select> method <select id="mm"><option value="frac">fractional</option><option value="sur">surrogate split</option></select></div>
+<canvas id="cv3"></canvas><div class="out" id="o3"></div>
+<div class="why"><b>Why it works:</b> if the missing feature were known, the true p(y|x) would lie somewhere along the dashed line. Fractional descent averages the leaf probabilities by marginal frequency (a form of marginalising over the unseen feature). A surrogate works when features are correlated, as they are along the moons, because the other feature then carries much of the same information. It can fail when features are independent.</div>
+</section>
+
+<section class="sec" id="s4">
+<h2>18.1.5 Pros and cons: axis-aligned splits and high variance</h2>
+<p>Two classes are separated by a line whose direction you rotate. The dashed line is the true boundary. Press “resample” to draw a new training set of 60 points per class and watch the tree change.</p>
+<div id="c4"></div><div class="row"><button class="btn" id="rs">resample training data</button></div><canvas id="cv4"></canvas><div class="out" id="o4"></div>
+<div class="why"><b>Cons:</b> a tree can only cut parallel to axes, so a diagonal boundary needs a staircase of many splits (rotate to 45° with depth 2). The tree is also unstable: a small change in data can change the top split, which changes everything below it, so the boundary jumps around between resamples (high variance). <b>Pros:</b> it is fast, interpretable, handles mixed feature types and needs no scaling. The variance problem is precisely what ensembles (next tab) attack.</div>
+</section>
+
+<section class="sec" id="s5">
+<h2>18.2.1 Stacking</h2>
+<p>Ensemble learning combines several base models f<sub>m</sub> into f(x)=Σ<sub>m</sub> w<sub>m</sub> f<sub>m</sub>(x). Stacking learns the weights. Base models: polynomial fits of degree 2 (underfits), 5 and 12 (overfits). Grey = base models, purple = ensemble, dashed = truth.</p>
+<div id="c5"></div><div class="row"><button class="btn" id="stk">stack: fit weights on held-out data</button><label><input type="checkbox" id="trn"> fit weights on training data instead</label></div><canvas id="cv5"></canvas><div class="out" id="o5"></div>
+<div class="why"><b>Why held-out data:</b> the degree-12 model has the lowest <em>training</em> error, so weights fitted on the training set shift to it and the stack inherits its overfitting (tick the box). Weights fitted on data the base models never saw reward models for generalising. The text uses cross-validated predictions for this, so that no data is wasted. Constraining w≥0 is a mild regulariser that helps a lot in practice.</div>
+</section>
+
+<section class="sec" id="s6">
+<h2>18.2.2 Ensembling is not Bayes model averaging</h2>
+<p>BMA weights models by posterior p(m|D)∝p(D|m)p(m) and predicts Σ p(m|D) p(y|m). Three models say x~N(μ<sub>m</sub>,1) with μ<sub>m</sub>∈{−1,0,1} and uniform prior. Data come from N(μ*,1).</p>
+<div id="c6"></div><canvas id="cv6a" class="s"></canvas><canvas id="cv6b" class="s"></canvas><div class="out" id="o6"></div>
+<div class="why"><b>Why they differ:</b> BMA assumes exactly one model is the true data-generating process and expresses uncertainty about which. As N grows, the evidence concentrates on a single model (top plot), so BMA ends up as that one model, even when the truth lies between models. An ensemble such as stacking <em>enlarges</em> the hypothesis space to weighted combinations, and its weights do not have to collapse as N grows. Where the truth is not in the model set (the “M-open” case), the two can behave quite differently.</div>
+</section>
+
+<script>
+const $=s=>document.querySelector(s),css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function rng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const gauss=r=>Math.sqrt(-2*Math.log(r()+1e-12))*Math.cos(2*Math.PI*r());
+function S(id,label,min,max,step,v){return `<label class="sl"><span>${label}: <b id="v_${id}"></b></span><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${v}"></label>`}
+const val=id=>+$('#'+id).value;
+function wire(ids,fn,fmt={}){ids.forEach(id=>{const e=$('#'+id),u=()=>{$('#v_'+id).textContent=fmt[id]?fmt[id](+e.value):(+e.value).toFixed(2)};u();e.addEventListener('input',()=>{u();fn()})})}
+function setS(id,v){$('#'+id).value=v;$('#'+id).dispatchEvent(new Event('input'))}
+function frame(c,xr,yr){
+  const r=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;c.width=w*r;c.height=h*r;
+  const g=c.getContext('2d');g.setTransform(r,0,0,r,0,0);
+  const p={l:36,r:10,t:10,b:24},pw=w-p.l-p.r,ph=h-p.t-p.b;
+  const X=x=>p.l+(x-xr[0])/(xr[1]-xr[0])*pw,Y=y=>h-p.b-(y-yr[0])/(yr[1]-yr[0])*ph;
+  const iX=px=>xr[0]+(px-p.l)/pw*(xr[1]-xr[0]),iY=py=>yr[0]+(h-p.b-py)/ph*(yr[1]-yr[0]);
+  g.font='11px system-ui';g.lineWidth=1;g.textAlign='center';
+  for(let i=0;i<=4;i++){const x=xr[0]+i*(xr[1]-xr[0])/4;g.strokeStyle=css('--line');g.beginPath();g.moveTo(X(x),p.t);g.lineTo(X(x),h-p.b);g.stroke();g.fillStyle=css('--mut');g.fillText(+x.toFixed(2),X(x),h-8)}
+  g.textAlign='right';
+  for(let i=0;i<=3;i++){const y=yr[0]+i*(yr[1]-yr[0])/3;g.strokeStyle=css('--line');g.beginPath();g.moveTo(p.l,Y(y));g.lineTo(w-p.r,Y(y));g.stroke();g.fillStyle=css('--mut');g.fillText(+y.toFixed(2),p.l-4,Y(y)+4)}
+  return{g,w,h,p,X,Y,iX,iY,
+    line(pts,col,wd=2,dash=[]){g.strokeStyle=css(col);g.lineWidth=wd;g.setLineDash(dash);g.beginPath();pts.forEach((q,i)=>i?g.lineTo(X(q[0]),Y(q[1])):g.moveTo(X(q[0]),Y(q[1])));g.stroke();g.setLineDash([])},
+    dot(x,y,col,rad=4,a=.85){g.globalAlpha=a;g.fillStyle=css(col);g.beginPath();g.arc(X(x),Y(y),rad,0,7);g.fill();g.globalAlpha=1},
+    text(t,x,y,col){g.textAlign='left';g.fillStyle=css(col);g.fillText(t,X(x),Y(y))},
+    heat(fn,st=6){for(let px=p.l;px<w-p.r;px+=st)for(let py=p.t;py<h-p.b;py+=st){const q=fn(iX(px+st/2),iY(py+st/2));g.globalAlpha=.12+.33*Math.abs(2*q-1);g.fillStyle=css(q>.5?'--c1':'--c0');g.fillRect(px,py,st,st)}g.globalAlpha=1},
+    pts(D){D.forEach(d=>this.dot(d.x[0],d.x[1],d.y?'--c1':'--c0',3.5,.95))},
+    clip(){g.save();g.beginPath();g.rect(p.l,p.t,pw,ph);g.clip()}}}
+
+/* ---------- CART (classification, 2 features) ---------- */
+const imp=(p,c)=>c==='gini'?2*p*(1-p):c==='entropy'?(p<=0||p>=1?0:-(p*Math.log2(p)+(1-p)*Math.log2(1-p))):Math.min(p,1-p);
+function splits(idx,D,f,c,ml=1){const a=idx.slice().sort((i,j)=>D[i].x[f]-D[j].x[f]),n=a.length,tot=a.reduce((s,i)=>s+D[i].y,0),out=[];let l1=0;
+  for(let k=1;k<n;k++){l1+=D[a[k-1]].y;const u=D[a[k-1]].x[f],v=D[a[k]].x[f];if(v-u<1e-9||k<ml||n-k<ml)continue;out.push({f,thr:(u+v)/2,cost:k/n*imp(l1/k,c)+(n-k)/n*imp((tot-l1)/(n-k),c)})}return out}
+function grow(idx,D,d,o){const n=idx.length,n1=idx.reduce((s,i)=>s+D[i].y,0),nd={n,p:n1/n,leaf:true,idx};
+  if(d>=o.md||n<2*o.ml||n1==0||n1==n)return nd;
+  let best=null;[0,1].forEach(f=>splits(idx,D,f,'gini',o.ml).forEach(s=>{if(!best||s.cost<best.cost)best=s}));
+  if(!best||imp(nd.p,'gini')-best.cost<1e-9)return nd;
+  nd.leaf=false;nd.f=best.f;nd.thr=best.thr;
+  nd.l=grow(idx.filter(i=>D[i].x[best.f]<=best.thr),D,d+1,o);nd.r=grow(idx.filter(i=>D[i].x[best.f]>best.thr),D,d+1,o);return nd}
+const tree=(D,md,ml=1)=>grow(D.map((_,i)=>i),D,0,{md,ml});
+function pred(nd,x){while(!nd.leaf)nd=x[nd.f]<=nd.thr?nd.l:nd.r;return nd.p}
+const leafCount=nd=>nd.leaf?1:leafCount(nd.l)+leafCount(nd.r);
+const errRate=(nd,D)=>D.filter(d=>(pred(nd,d.x)>.5?1:0)!==d.y).length/D.length;
+function moons(n,noise,flip,seed){const r=rng(seed);return Array.from({length:n},(_,i)=>{const y=i%2,t=Math.PI*r();let a=y?1-Math.cos(t):Math.cos(t),b=y?.5-Math.sin(t):Math.sin(t);a+=noise*gauss(r);b+=noise*gauss(r);return{x:[a,b],y:r()<flip?1-y:y}})}
+const TR=moons(80,.25,.06,21),VA=moons(300,.25,0,22),XR=[-1.6,2.6],YR=[-1.2,1.7],RNG=[XR,YR];
+
+/* ---------- 18.1.1 regression tree ---------- */
+$('#c0').innerHTML=S('d0','max depth',0,6,1,2);
+const R1=(()=>{const r=rng(4);return Array.from({length:40},()=>{const x=6*r();return{x,y:Math.sin(x)+.3*gauss(r)}}).sort((a,b)=>a.x-b.x)})();
+const sse=b=>{const m=b.reduce((s,p)=>s+p.y,0)/b.length;return b.reduce((s,p)=>s+(p.y-m)**2,0)};
+function g1(a,d,md){const nd={m:a.reduce((s,p)=>s+p.y,0)/a.length,leaf:true};if(d>=md||a.length<4)return nd;let b=null;
+  for(let k=2;k<=a.length-2;k++){const c=sse(a.slice(0,k))+sse(a.slice(k));if(!b||c<b.c)b={c,k}}
+  nd.leaf=false;nd.thr=(a[b.k-1].x+a[b.k].x)/2;nd.l=g1(a.slice(0,b.k),d+1,md);nd.r=g1(a.slice(b.k),d+1,md);return nd}
+function lv(n,lo,hi,o){if(n.leaf)o.push({lo,hi,m:n.m});else{lv(n.l,lo,n.thr,o);lv(n.r,n.thr,hi,o)}return o}
+function d0(){const F=frame($('#cv0'),[0,6],[-1.6,1.6]),L=lv(g1(R1,0,val('d0')),0,6,[]);
+  F.line(Array.from({length:121},(_,i)=>[i*.05,Math.sin(i*.05)]),'--mut',1.5,[5,4]);
+  R1.forEach(p=>F.dot(p.x,p.y,'--c0',3.5));
+  L.forEach((l,i)=>{F.line([[l.lo,l.m],[l.hi,l.m]],'--ac',3);if(i)F.line([[l.lo,-1.6],[l.lo,1.6]],'--ac',1,[2,3])});
+  const mse=R1.reduce((s,p)=>s+(p.y-L.find(l=>p.x>=l.lo&&p.x<=l.hi).m)**2,0)/R1.length;
+  $('#o0').textContent=`depth ≤ ${val('d0')}  regions=${L.length}  training MSE=${mse.toFixed(3)}`}
+wire(['d0'],d0,{d0:v=>v});
+
+/* ---------- 18.1.2 fitting ---------- */
+$('#c1').innerHTML=S('th','threshold t',-1.6,2.6,.01,.5);
+function setFeat(){const f=+$('#ft').value,r=RNG[f],e=$('#th');e.min=r[0];e.max=r[1];e.value=((r[0]+r[1])/2).toFixed(2);e.dispatchEvent(new Event('input'))}
+function d1(){const f=+$('#ft').value,c=$('#cr').value,t=val('th'),idx=TR.map((_,i)=>i),n=TR.length,F=frame($('#cv1a'),XR,YR);
+  F.heat((a,b)=>{const q=[a,b];const k=q[f]<=t?0:1;const sub=TR.filter(d=>(d.x[f]<=t?0:1)===k);return sub.length?sub.reduce((s,d)=>s+d.y,0)/sub.length:.5},8);
+  F.pts(TR);F.line(f?[[XR[0],t],[XR[1],t]]:[[t,YR[0]],[t,YR[1]]],'--fg',2);
+  const L=TR.filter(d=>d.x[f]<=t),R=TR.filter(d=>d.x[f]>t),pl=L.length?L.reduce((s,d)=>s+d.y,0)/L.length:0,pr=R.length?R.reduce((s,d)=>s+d.y,0)/R.length:0,p0=TR.reduce((s,d)=>s+d.y,0)/n;
+  const cost=L.length/n*imp(pl,c)+R.length/n*imp(pr,c),cv=splits(idx,TR,f,c),best=cv.reduce((a,b)=>b.cost<a.cost-1e-12?b:a,cv[0]);
+  const G=frame($('#cv1b'),RNG[f],[0,.55]);
+  G.line([[RNG[f][0],imp(p0,c)],[RNG[f][1],imp(p0,c)]],'--mut',1,[4,4]);G.line(cv.map(s=>[s.thr,s.cost]),'--ac',2);
+  G.dot(best.thr,best.cost,'--c2',6,1);G.dot(t,Math.min(.55,cost),'--c1',6,1);G.text('cost of every split (green = best, orange = yours, dashed = parent impurity)',RNG[f][0]+.05,.52,'--mut');
+  $('#o1').textContent=`nL=${L.length} (p1=${pl.toFixed(2)})  nR=${R.length} (p1=${pr.toFixed(2)})  H(parent)=${imp(p0,c).toFixed(3)}  cost=${cost.toFixed(3)}  gain=${(imp(p0,c)-cost).toFixed(3)}  best t=${best.thr.toFixed(2)} (cost ${best.cost.toFixed(3)})`;
+  $('#bst').onclick=()=>setS('th',best.thr.toFixed(2))}
+wire(['th'],d1);$('#ft').onchange=setFeat;$('#cr').onchange=d1;
+
+/* ---------- 18.1.3 regularization ---------- */
+$('#c2').innerHTML=S('md','max depth',1,12,1,3)+S('ml','min leaf size',1,20,1,1);
+function d2(){const md=val('md'),ml=val('ml'),T=tree(TR,md,ml),F=frame($('#cv2a'),XR,YR);
+  F.heat((a,b)=>pred(T,[a,b]));F.pts(TR);
+  $('#o2').textContent=`depth ≤ ${md}, min leaf ${ml}: leaves=${leafCount(T)}  train err=${(100*errRate(T,TR)).toFixed(1)}%  val err=${(100*errRate(T,VA)).toFixed(1)}%`;
+  const G=frame($('#cv2b'),[1,12],[0,.4]),tr=[],va=[];for(let d=1;d<=12;d++){const t=tree(TR,d,ml);tr.push([d,errRate(t,TR)]);va.push([d,errRate(t,VA)])}
+  G.line(tr,'--c0',2);G.line(va,'--c1',2.5);G.line([[md,0],[md,.4]],'--ac',1.2,[3,3]);G.text('train error',1.2,.37,'--c0');G.text('validation error (x: max depth)',1.2,.33,'--c1')}
+wire(['md','ml'],d2,{md:v=>v,ml:v=>v});
+
+/* ---------- 18.1.4 missing features ---------- */
+$('#c3').innerHTML=S('px','x₁ of test point',-1.5,2.5,.02,.5)+S('py','x₂ of test point',-1,1.5,.02,.3);
+const T4=tree(TR,3,3);
+(function sur(nd){if(nd.leaf)return;const g=1-nd.f,L=new Set(nd.l.idx);let best=null;
+  nd.idx.slice().sort((i,j)=>TR[i].x[g]-TR[j].x[g]).forEach((i,k,a)=>{if(!k)return;const thr=(TR[a[k-1]].x[g]+TR[i].x[g])/2;let ag=0;a.forEach(j=>{if((TR[j].x[g]<=thr)===L.has(j))ag++});
+    [[1,ag],[-1,a.length-ag]].forEach(([dir,s])=>{if(!best||s>best.s)best={g,thr,dir,s}})});
+  nd.sur=best;sur(nd.l);sur(nd.r)})(T4);
+function predM(nd,x,mf,mode){if(nd.leaf)return nd.p;const f=nd.f;
+  if(f!==mf)return predM(x[f]<=nd.thr?nd.l:nd.r,x,mf,mode);
+  if(mode==='frac'){const a=nd.l.n/nd.n;return a*predM(nd.l,x,mf,mode)+(1-a)*predM(nd.r,x,mf,mode)}
+  const s=nd.sur,left=s.dir>0?x[s.g]<=s.thr:x[s.g]>s.thr;return predM(left?nd.l:nd.r,x,mf,mode)}
+function d3(){const x=[val('px'),val('py')],mf=+$('#ms').value,mode=$('#mm').value,F=frame($('#cv3'),XR,YR);
+  F.heat((a,b)=>pred(T4,[a,b]));F.pts(TR);
+  if(mf==0)F.line([[XR[0],x[1]],[XR[1],x[1]]],'--fg',1.5,[6,4]);if(mf==1)F.line([[x[0],YR[0]],[x[0],YR[1]]],'--fg',1.5,[6,4]);
+  F.dot(x[0],x[1],'--fg',7,1);F.dot(x[0],x[1],'--ac',4,1);
+  const pf=pred(T4,x),pm=predM(T4,x,mf,mode);
+  $('#o3').textContent=mf<0?`all features observed: p(y=1|x)=${pf.toFixed(3)}`:`${mf?'x₂':'x₁'} missing, ${mode==='frac'?'fractional':'surrogate'}: p(y=1|x)=${pm.toFixed(3)}   (if both were observed: ${pf.toFixed(3)})`}
+wire(['px','py'],d3);$('#ms').onchange=d3;$('#mm').onchange=d3;
+
+/* ---------- 18.1.5 pros and cons ---------- */
+$('#c4').innerHTML=S('rot','boundary angle (degrees)',0,90,1,45)+S('dp','max depth',1,8,1,2);
+let seed4=1;
+function two(n,th,seed,sep=1.2,sd=.8){const r=rng(seed),c=Math.cos(th),s=Math.sin(th);return Array.from({length:2*n},(_,i)=>{const y=i%2,m=y?sep:-sep;return{x:[m*c+sd*gauss(r),m*s+sd*gauss(r)],y}})}
+function d4(){const th=val('rot')*Math.PI/180,dp=val('dp'),D=two(60,th,seed4),T=tree(D,dp,1),Te=two(1500,th,999),c=Math.cos(th),s=Math.sin(th),F=frame($('#cv4'),[-3.5,3.5],[-3.5,3.5]);
+  F.heat((a,b)=>pred(T,[a,b]));F.pts(D);F.clip();F.line([[9*s,-9*c],[-9*s,9*c]],'--fg',2,[6,4]);F.g.restore();
+  const bayes=Te.filter(d=>((d.x[0]*c+d.x[1]*s>0)?1:0)===d.y).length/Te.length;
+  $('#o4').textContent=`leaves=${leafCount(T)}  tree test acc=${(100*(1-errRate(T,Te))).toFixed(1)}%  true-line acc=${(100*bayes).toFixed(1)}%  (resample #${seed4})`}
+wire(['rot','dp'],d4,{rot:v=>v+'°',dp:v=>v});$('#rs').onclick=()=>{seed4++;d4()};
+
+/* ---------- 18.2.1 stacking ---------- */
+function inv(A){const n=A.length,M=A.map((r,i)=>[...r,...Array.from({length:n},(_,j)=>+(i==j))]);
+  for(let i=0;i<n;i++){let p=i;for(let r=i+1;r<n;r++)if(Math.abs(M[r][i])>Math.abs(M[p][i]))p=r;[M[i],M[p]]=[M[p],M[i]];const d=M[i][i];for(let j=0;j<2*n;j++)M[i][j]/=d;for(let r=0;r<n;r++)if(r!=i){const f=M[r][i];if(f)for(let j=0;j<2*n;j++)M[r][j]-=f*M[i][j]}}
+  return M.map(r=>r.slice(n))}
+function polyFit(xs,ys,deg,lam){const A=xs.map(x=>Array.from({length:deg+1},(_,j)=>(x/3)**j)),n=deg+1,
+  M=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>A.reduce((s,r)=>s+r[i]*r[j],0)+(i==j?lam:0))),
+  b=Array.from({length:n},(_,i)=>A.reduce((s,r,k)=>s+r[i]*ys[k],0)),w=inv(M).map(r=>r.reduce((s,v,j)=>s+v*b[j],0));
+  return x=>w.reduce((s,wj,j)=>s+wj*(x/3)**j,0)}
+const truth=x=>Math.sin(1.5*x)+.3*x,r5=rng(8),mk5=n=>Array.from({length:n},()=>{const x=-3+6*r5();return{x,y:truth(x)+.3*gauss(r5)}});
+const A5=mk5(20),H5=mk5(20),B5=[2,5,12].map(d=>polyFit(A5.map(p=>p.x),A5.map(p=>p.y),d,1e-5)),XG=Array.from({length:121},(_,i)=>-3+i*.05);
+$('#c5').innerHTML=['w₂ (degree 2)','w₅ (degree 5)','w₁₂ (degree 12)'].map((t,i)=>S('w'+i,t,0,1.5,.01,.33)).join('');
+const ens=(x,w)=>w.reduce((s,wk,k)=>s+wk*B5[k](x),0),mseOn=(D,f)=>D.reduce((s,p)=>s+(f(p.x)-p.y)**2,0)/D.length;
+function d5(){const w=[0,1,2].map(i=>val('w'+i)),F=frame($('#cv5'),[-3,3],[-2.5,2.5]);
+  F.line(XG.map(x=>[x,truth(x)]),'--mut',1.5,[5,4]);B5.forEach(f=>F.line(XG.map(x=>[x,Math.max(-2.5,Math.min(2.5,f(x)))]),'--line',1.5));
+  F.line(XG.map(x=>[x,Math.max(-2.5,Math.min(2.5,ens(x,w)))]),'--ac',3);A5.forEach(p=>F.dot(p.x,p.y,'--c0',3.5));H5.forEach(p=>F.dot(p.x,p.y,'--c1',3.5));
+  const te=f=>XG.reduce((s,x)=>s+(f(x)-truth(x))**2,0)/XG.length;
+  $('#o5').textContent=`blue=train, orange=held-out.  test MSE: deg2=${te(B5[0]).toFixed(3)} deg5=${te(B5[1]).toFixed(3)} deg12=${te(B5[2]).toFixed(3)} | ensemble=${te(x=>ens(x,w)).toFixed(3)}  (weights ${w.map(v=>v.toFixed(2)).join(', ')})`}
+wire(['w0','w1','w2'],d5);
+$('#stk').onclick=()=>{const D=$('#trn').checked?A5:H5,P=D.map(p=>B5.map(f=>f(p.x))),y=D.map(p=>p.y);let w=[.33,.33,.33];
+  const L=P.reduce((s,r)=>s+r.reduce((a,v)=>a+v*v,0),0);
+  for(let it=0;it<4000;it++){const g=[0,0,0];P.forEach((r,i)=>{const e=r.reduce((s,v,k)=>s+v*w[k],0)-y[i];r.forEach((v,k)=>g[k]+=e*v)});w=w.map((v,k)=>Math.max(0,v-g[k]/L))}
+  w.forEach((v,k)=>setS('w'+k,Math.min(1.5,v).toFixed(2)))};
+
+/* ---------- 18.2.2 BMA vs ensembling ---------- */
+$('#c6').innerHTML=S('mu','true mean μ*',-1.5,1.5,.05,.4)+S('nn','number of data points N',1,200,1,20);
+const Z=(()=>{const r=rng(13);return Array.from({length:200},()=>gauss(r))})(),MU=[-1,0,1],npdf=(x,m)=>Math.exp(-.5*(x-m)**2)/Math.sqrt(2*Math.PI);
+function postW(mu,N){const ll=MU.map(m=>{let s=0;for(let i=0;i<N;i++)s+=-.5*(mu+Z[i]-m)**2;return s}),mx=Math.max(...ll),e=ll.map(v=>Math.exp(v-mx)),t=e.reduce((a,b)=>a+b);return e.map(v=>v/t)}
+function d6(){const mu=val('mu'),N=val('nn'),F=frame($('#cv6a'),[1,200],[0,1]),cols=['--c0','--c2','--c1'];
+  MU.forEach((_,k)=>F.line(Array.from({length:200},(_,i)=>[i+1,postW(mu,i+1)[k]]).filter((_,i)=>i%2==0||i==199),cols[k],2));
+  F.line([[N,0],[N,1]],'--fg',1,[3,3]);F.text('p(m|D) vs N: μ=−1 blue, 0 green, +1 orange',5,.93,'--mut');
+  const w=postW(mu,N),G=frame($('#cv6b'),[-4,4],[0,.6]),xs=Array.from({length:161},(_,i)=>-4+i*.05);
+  G.line(xs.map(x=>[x,npdf(x,mu)]),'--mut',1.5,[5,4]);G.line(xs.map(x=>[x,w.reduce((s,wk,k)=>s+wk*npdf(x,MU[k]),0)]),'--ac',3);G.line(xs.map(x=>[x,MU.reduce((s,m)=>s+npdf(x,m)/3,0)]),'--c2',1.8);
+  G.text('dashed: truth · purple: BMA predictive · green: uniform ensemble',-3.9,.57,'--mut');
+  $('#o6').textContent=`N=${N}  p(m|D) = [${w.map(v=>v.toFixed(3)).join(', ')}]  → BMA ${Math.max(...w)>.95?'has collapsed onto one model':'still spread over models'}`}
+wire(['mu','nn'],d6,{nn:v=>v});
+
+/* ---------- tabs ---------- */
+const draws=[d0,d1,d2,d3,d4,d5,d6],names=['18.1.1 Model','18.1.2 Fitting','18.1.3 Regularization','18.1.4 Missing data','18.1.5 Pros/cons','18.2.1 Stacking','18.2.2 vs BMA'];
+names.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>show(i);$('#nav').appendChild(b)});
+let cur=0;function show(i){cur=i;document.querySelectorAll('.sec').forEach((s,j)=>s.classList.toggle('on',j==i));[...$('#nav').children].forEach((b,j)=>b.classList.toggle('on',j==i));draws[i]()}
+addEventListener('resize',()=>draws[cur]());
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>draws[cur]());
+show(0);
+</script></main></body></html>
