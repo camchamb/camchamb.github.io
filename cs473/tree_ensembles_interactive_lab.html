@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tree Ensembles — Interactive Lab</title>
+<style>
+:root{--bg:#0b1020;--panel:#121a2d;--panel2:#172239;--line:#293653;--text:#e8eefc;--muted:#9eacc7;--cyan:#55d6e8;--orange:#ffb454;--green:#7cdda5;--pink:#f28bb5}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#0b1020,#101a30 65%,#0c1426);color:var(--text);font:15px/1.5 Inter,system-ui,Segoe UI,Arial,sans-serif}
+header{padding:30px max(22px,calc((100vw - 1450px)/2));border-bottom:1px solid var(--line);background:#0b1020cc}
+h1{margin:0;font-size:clamp(27px,4vw,40px);letter-spacing:-1.2px}header p{color:var(--muted);max-width:900px;margin:8px 0 0}
+main{max-width:1450px;margin:auto;padding:22px;display:grid;gap:18px}
+.layout{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}
+.panel{background:linear-gradient(160deg,var(--panel),#10182a);border:1px solid var(--line);border-radius:15px;padding:17px;box-shadow:0 12px 32px #0002}
+.panel h2{font-size:17px;margin:0 0 13px}.panel h3{font-size:14px;margin:18px 0 8px;color:#c9d7f2}
+.control{margin:13px 0}.control label{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:#d7e1f5;margin-bottom:5px}
+output{color:var(--cyan);font-variant-numeric:tabular-nums;font-weight:700}
+input[type=range]{width:100%;accent-color:var(--cyan)}select{width:100%;background:#0c1425;color:var(--text);border:1px solid #344361;padding:9px;border-radius:8px}
+input[type=checkbox]{accent-color:var(--cyan);transform:scale(1.1);margin-right:8px}
+.hint{font-size:11px;color:var(--muted);margin-top:3px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+button{background:#1e3551;color:var(--text);border:1px solid #3c5b7b;padding:9px 13px;border-radius:9px;cursor:pointer;font-weight:650}
+button.primary{background:#126174;border-color:#238ca0}button:hover{filter:brightness(1.2)}
+.content{display:grid;gap:18px}.topgrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:18px}
+.canvaswrap{position:relative;background:#091222;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+canvas{display:block;width:100%;height:auto;aspect-ratio:1.45}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:9px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px}
+.metric small{display:block;color:var(--muted);font-size:11px}.metric strong{font-size:23px;letter-spacing:-.5px}
+.explain{color:#c6d3e9;font-size:13px}.explain b{color:var(--cyan)}
+.treebox{overflow:auto;background:#0a1324;border:1px solid var(--line);border-radius:10px;padding:10px;min-height:245px}
+svg{display:block;min-width:600px;width:100%;height:260px}.node{fill:#172a43;stroke:#4a7194;stroke-width:1.4}.leaf{fill:#17443f;stroke:#56bda9}.nodetxt{fill:#e8eefc;font-size:11px;text-anchor:middle}.edge{stroke:#657b9a;stroke-width:1.4;fill:none}
+.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{text-align:left;padding:9px;border-bottom:1px solid var(--line)}.table th{color:var(--muted);font-weight:600}
+.bar{height:7px;background:#263550;border-radius:8px;overflow:hidden}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--green))}
+details{border-top:1px solid var(--line);padding:10px 0}summary{cursor:pointer;color:#d9e5fa;font-weight:650}.math{font-family:ui-monospace,monospace;background:#0a1425;padding:10px;border-radius:8px;color:#a8e8ed;overflow:auto;font-size:12px}
+.note{border-left:3px solid var(--orange);padding:8px 11px;background:#201d1a;color:#d9c9b4;font-size:12px;border-radius:0 7px 7px 0}
+footer{color:var(--muted);font-size:12px;padding:8px 2px}
+@media(max-width:950px){.layout{grid-template-columns:1fr}.topgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>Tree Ensembles <span style="color:var(--cyan)">Interactive Lab</span></h1>
+<p>Explore how collections of decision trees create nonlinear decision boundaries. Change the data, ensemble family, and training hyperparameters; retrain and inspect the resulting boundary, metrics, feature importance, and a representative tree.</p></header>
+<main>
+<div class="layout">
+<aside class="panel">
+<h2>Experiment controls</h2>
+<div class="control"><label for="model">Ensemble method</label><select id="model">
+<option value="rf">Random forest</option><option value="extra">Extremely randomized trees</option><option value="bag">Bagged decision trees</option><option value="boost">Gradient boosting (stumps)</option></select>
+<div class="hint" id="modelHint">Bootstrap samples + random feature subsets; aggregate by majority vote.</div></div>
+<h3>Data generation</h3>
+<div class="control"><label for="dataset">Synthetic dataset</label><select id="dataset"><option value="moons">Two moons</option><option value="circles">Concentric circles</option><option value="xor">XOR</option><option value="blobs">Gaussian blobs</option><option value="spiral">Spiral (approx.)</option></select></div>
+<div class="control"><label>Samples <output id="nOut">420</output></label><input id="n" type="range" min="120" max="900" step="20" value="420"></div>
+<div class="control"><label>Noise <output id="noiseOut">0.18</output></label><input id="noise" type="range" min="0" max="0.65" step="0.01" value="0.18"></div>
+<div class="control"><label>Train fraction <output id="splitOut">75%</output></label><input id="split" type="range" min="55" max="90" step="5" value="75"></div>
+<h3>Tree complexity</h3>
+<div class="control"><label>Trees / boosting stages <output id="treesOut">35</output></label><input id="trees" type="range" min="1" max="100" value="35"></div>
+<div class="control"><label>Maximum depth <output id="depthOut">5</output></label><input id="depth" type="range" min="1" max="9" value="5"></div>
+<div class="control"><label>Minimum samples to split <output id="minSplitOut">8</output></label><input id="minSplit" type="range" min="2" max="35" value="8"></div>
+<div class="control"><label>Maximum features per split <output id="featOut">1</output></label><input id="feat" type="range" min="1" max="2" value="1"></div>
+<h3>Ensemble behavior</h3>
+<div class="control"><label>Row sampling fraction <output id="sampleOut">80%</output></label><input id="sample" type="range" min="40" max="100" step="5" value="80"></div>
+<div class="control"><label>Learning rate (boosting) <output id="lrOut">0.25</output></label><input id="lr" type="range" min="0.05" max="1" step="0.05" value="0.25"></div>
+<div class="control"><label><span><input id="bootstrap" type="checkbox" checked>Bootstrap rows (with replacement)</span></label></div>
+<div class="control"><label><span><input id="randomThreshold" type="checkbox">Random split thresholds (Extra Trees)</span></label></div>
+<div class="actions"><button class="primary" id="train">↻ Generate & train</button><button id="newData">New random data</button><button id="reset">Reset defaults</button></div>
+<div class="note" style="margin-top:14px">The implementation is a compact educational simulator, not a production ML library. It trains actual small trees on generated 2D data; some algorithm details are simplified for speed and clarity.</div>
+</aside>
+<section class="content">
+<div class="topgrid">
+<div class="panel"><h2>Learned decision surface</h2><div class="canvaswrap"><canvas id="plot" width="900" height="620"></canvas></div>
+<div class="legend"><span><i class="dot" style="background:#42c8d8"></i>Class 0</span><span><i class="dot" style="background:#ffad62"></i>Class 1</span><span><i class="dot" style="background:#fff;border:2px solid #fff"></i>Test sample outline</span><span>Background = predicted probability</span></div>
+<p class="explain" id="boundaryText">The background color shows the ensemble's estimated probability of class 1. Points are the observed samples; outlined points belong to the held-out test set.</p></div>
+<div class="panel"><h2>Evaluation dashboard</h2><div class="metrics">
+<div class="metric"><small>Test accuracy</small><strong id="accuracy">—</strong></div><div class="metric"><small>Test ROC AUC</small><strong id="auc">—</strong></div>
+<div class="metric"><small>Precision · class 1</small><strong id="precision">—</strong></div><div class="metric"><small>Recall · class 1</small><strong id="recall">—</strong></div>
+<div class="metric"><small>Train accuracy</small><strong id="trainAcc">—</strong></div><div class="metric"><small>Model size</small><strong id="size">—</strong></div></div>
+<h3>Confusion matrix</h3><table class="table"><thead><tr><th></th><th>Predicted 0</th><th>Predicted 1</th></tr></thead><tbody><tr><th>Actual 0</th><td id="tn">—</td><td id="fp">—</td></tr><tr><th>Actual 1</th><td id="fn">—</td><td id="tp">—</td></tr></tbody></table>
+<p class="explain" id="metricNote">Metrics are computed on a held-out test split.</p></div>
+</div>
+<div class="panel"><h2>How the ensemble combines trees</h2><p class="explain" id="methodExplain"></p><div class="math" id="formula"></div>
+<div class="topgrid" style="margin-top:12px"><div><h3>Feature importance (split-based)</h3><div id="importance"></div></div><div><h3>What to notice</h3><p class="explain" id="insight"></p></div></div></div>
+<div class="panel"><h2>Representative tree structure</h2><p class="explain">The diagram shows the first tree (or first boosting stump) in the fitted ensemble. Each internal node asks a threshold question; leaves output a class vote or a boosting score.</p><div class="treebox"><svg id="tree" viewBox="0 0 900 260" aria-label="Decision tree diagram"></svg></div></div>
+<div class="panel"><h2>Hyperparameter guide</h2>
+<table class="table"><thead><tr><th>Parameter</th><th>What it controls</th><th>Typical effect</th></tr></thead><tbody>
+<tr><td><b>n_estimators</b></td><td>Number of trees / stages</td><td>More trees reduce variance, increase compute; boosting may overfit if stages keep growing.</td></tr>
+<tr><td><b>max_depth</b></td><td>Maximum path length</td><td>Shallow trees are smoother and higher-bias; deep trees can memorize noise.</td></tr>
+<tr><td><b>min_samples_split</b></td><td>Minimum rows required to create a split</td><td>Higher values regularize trees and reduce tiny, unstable branches.</td></tr>
+<tr><td><b>max_features</b></td><td>Candidate features considered at a split</td><td>Smaller values decorrelate random-forest trees; too small can weaken each tree.</td></tr>
+<tr><td><b>max_samples</b></td><td>Rows used by each estimator</td><td>Subsampling increases diversity; very small samples can raise bias.</td></tr>
+<tr><td><b>learning_rate</b></td><td>Contribution of each boosting stage</td><td>Smaller steps often need more stages but can generalize better.</td></tr>
+</tbody></table>
+<details><summary>Random forest vs. boosting: the key conceptual difference</summary><p class="explain"><b>Random forests</b> build many trees independently (often in parallel) using bootstrap samples and random feature subsets. Their predictions are averaged or voted, primarily reducing variance. <b>Gradient boosting</b> builds trees sequentially: each new tree tries to correct the current ensemble's errors. It can reduce bias, but is more sensitive to learning rate, number of stages, and overfitting.</p></details>
+<details><summary>Why can an ensemble outperform one tree?</summary><p class="explain">A single deep tree has high variance: small changes in the training data can change its structure. If individual trees make imperfect but not perfectly correlated errors, averaging their predictions can cancel some of that noise. Diversity is therefore important—not just the number of trees.</p></details>
+<details><summary>What is out-of-bag (OOB) intuition?</summary><p class="explain">With bootstrap sampling, each tree typically leaves out roughly 36.8% of training examples. Those out-of-bag examples can act as a validation set for that tree. This simulator uses a separate held-out test set instead, so its displayed metrics are easier to interpret consistently across methods.</p></details>
+</div>
+<footer>Educational implementation · 2D binary classification · deterministic seed per retrain unless you generate new data · no external libraries required.</footer>
+</section></div></main>
+<script>
+const $=id=>document.getElementById(id); let data=[],trainSet=[],testSet=[],model=null,seed=17;
+const cfg=()=>({method:$('model').value,n:+$('n').value,noise:+$('noise').value,split:+$('split').value/100,trees:+$('trees').value,depth:+$('depth').value,minSplit:+$('minSplit').value,feat:+$('feat').value,sample:+$('sample').value/100,lr:+$('lr').value,bootstrap:$('bootstrap').checked,randomThreshold:$('randomThreshold').checked});
+function rng(s){let x=s>>>0;return()=>{x=(x*1664525+1013904223)>>>0;return x/4294967296}}
+function gauss(r){return Math.sqrt(-2*Math.log(Math.max(r(),1e-9)))*Math.cos(2*Math.PI*r())}
+function makeData(c){let r=rng(seed++),a=[],n=c.n;for(let i=0;i<n;i++){let y=i%2,x1=0,x2=0,z1=gauss(r),z2=gauss(r),noise=c.noise;
+if($('dataset').value==='moons'){let t=r()*Math.PI;if(y===0){x1=Math.cos(t);x2=Math.sin(t)}else{x1=1-Math.cos(t);x2=.48-Math.sin(t)}}
+else if($('dataset').value==='circles'){let t=r()*Math.PI*2,rad=y===0?.48:1;x1=rad*Math.cos(t);x2=rad*Math.sin(t)}
+else if($('dataset').value==='xor'){x1=(r()-.5)*2;x2=(r()-.5)*2;y=(x1*x2>0)?0:1}
+else if($('dataset').value==='spiral'){let t=(i/2/n)*Math.PI*4+ y*Math.PI;x1=t/7*Math.cos(t);x2=t/7*Math.sin(t)}
+else{x1=y===0?-0.65:0.65;x2=y===0?-0.45:0.45}
+x1+=z1*noise;x2+=z2*noise;a.push({x:[x1,x2],y})}return a}
+function gini(rows){if(!rows.length)return 0;let p=rows.reduce((s,d)=>s+d.y,0)/rows.length;return 2*p*(1-p)}
+function mse(rows){if(!rows.length)return 0;let m=rows.reduce((s,d)=>s+d.y,0)/rows.length;return rows.reduce((s,d)=>s+(d.y-m)**2,0)/rows.length}
+function buildTree(rows,c,r,reg=false,depth=0,importance=[0,0]){let vals=rows.map(d=>d.y),mean=vals.reduce((a,b)=>a+b,0)/Math.max(1,vals.length),node={value:reg?mean:(mean>=.5?1:0),prob:mean,count:rows.length,depth};
+if(depth>=c.depth||rows.length<c.minSplit||gini(rows)<1e-8||rows.length<4)return node;
+let features=c.feat===2?[0,1]:[Math.floor(r()*2)],best=null,parent=reg?mse(rows):gini(rows);
+for(let f of features){let sorted=[...new Set(rows.map(d=>d.x[f]))].sort((a,b)=>a-b);if(sorted.length<2)continue;let candidates=[];
+if(c.randomThreshold){for(let k=0;k<Math.min(12,sorted.length-1);k++){let j=Math.floor(r()*(sorted.length-1));candidates.push((sorted[j]+sorted[j+1])/2)}}
+else {let step=Math.max(1,Math.floor((sorted.length-1)/16));for(let j=0;j<sorted.length-1;j+=step)candidates.push((sorted[j]+sorted[j+1])/2)}
+for(let t of candidates){let l=rows.filter(d=>d.x[f]<=t),rr=rows.filter(d=>d.x[f]>t);if(l.length<2||rr.length<2)continue;let impurity=(l.length*(reg?mse(l):gini(l))+rr.length*(reg?mse(rr):gini(rr)))/rows.length,gain=parent-impurity;if(!best||gain>best.gain)best={f,t,l,rr,gain}}
+}
+if(!best||best.gain<1e-5)return node;importance[best.f]+=best.gain*rows.length;node.f=best.f;node.t=best.t;node.left=buildTree(best.l,c,r,reg,depth+1,importance);node.right=buildTree(best.rr,c,r,reg,depth+1,importance);return node}
+function predictTree(n,x){while(n.left){n=x[n.f]<=n.t?n.left:n.right}return n}
+function train(c){let r=rng(20261111+seed),all=makeData(c);let shuffled=[...all].sort(()=>r()-.5),cut=Math.floor(shuffled.length*c.split);trainSet=shuffled.slice(0,cut);testSet=shuffled.slice(cut);let trees=[],importance=[0,0],sampleN=Math.max(20,Math.floor(trainSet.length*c.sample));
+if(c.method==='boost'){let scores=trainSet.map(()=>0),base=0.5;for(let k=0;k<c.trees;k++){let residual=trainSet.map((d,i)=>({...d,y:d.y-(1/(1+Math.exp(-scores[i])))}));let rows=residual;let imp=[0,0],stump=buildTree(rows,{...c,depth:Math.min(c.depth,2),feat:2,minSplit:c.minSplit},r,true,0,imp);trees.push(stump);importance[0]+=imp[0];importance[1]+=imp[1];trainSet.forEach((d,i)=>{scores[i]+=c.lr*predictTree(stump,d.x).value})}}
+else{for(let k=0;k<c.trees;k++){let rows=[];if(c.bootstrap){for(let j=0;j<sampleN;j++)rows.push(trainSet[Math.floor(r()*trainSet.length)])}else rows=[...trainSet].sort(()=>r()-.5).slice(0,sampleN);let imp=[0,0],tree=buildTree(rows,c,r,false,0,imp);trees.push(tree);importance[0]+=imp[0];importance[1]+=imp[1]}}
+model={trees,importance,c};render()}
+function prob(x){if(!model)return .5;let c=model.c;if(c.method==='boost'){let s=0;for(let t of model.trees)s+=c.lr*predictTree(t,x).value;return 1/(1+Math.exp(-s))}let v=model.trees.reduce((s,t)=>s+predictTree(t,x).value,0);return v/model.trees.length}
+function auc(items){let sorted=[...items].sort((a,b)=>a.p-b.p),pos=items.filter(d=>d.y===1).length,neg=items.length-pos;if(!pos||!neg)return NaN;let rank=0;sorted.forEach((d,i)=>{if(d.y===1)rank+=i+1});return (rank-pos*(pos+1)/2)/(pos*neg)}
+function render(){let c=model.c, preds=testSet.map(d=>({y:d.y,p:prob(d.x)})),tp=0,tn=0,fp=0,fn=0;preds.forEach(d=>{let p=d.p>=.5?1:0;if(p&&d.y)tp++;else if(p&&!d.y)fp++;else if(!p&&d.y)fn++;else tn++});let acc=(tp+tn)/preds.length,prec=tp/(tp+fp)||0,rec=tp/(tp+fn)||0,trainAcc=trainSet.filter(d=>(prob(d.x)>=.5?1:0)===d.y).length/trainSet.length;
+$('accuracy').textContent=(100*acc).toFixed(1)+'%';$('auc').textContent=auc(preds).toFixed(3);$('precision').textContent=(100*prec).toFixed(1)+'%';$('recall').textContent=(100*rec).toFixed(1)+'%';$('trainAcc').textContent=(100*trainAcc).toFixed(1)+'%';$('size').textContent=c.method==='boost'?c.trees+' stages':c.trees+' trees';$('tn').textContent=tn;$('fp').textContent=fp;$('fn').textContent=fn;$('tp').textContent=tp;
+let desc={rf:'Each tree sees a bootstrap sample and a random subset of features at each split. Trees are trained independently; the ensemble averages their class votes.',extra:'Extremely randomized trees add randomness to candidate split thresholds. This can reduce correlation between trees, sometimes at the cost of a weaker individual tree.',bag:'Bagging trains full trees on independently sampled row sets, then averages their votes. Feature randomness is disabled when max_features = 2.',boost:'Gradient boosting adds shallow regression trees sequentially to correct residual errors in the current logit score. Learning rate scales each stage.'};
+$('methodExplain').textContent=desc[c.method];$('formula').textContent=c.method==='boost'?'Fₘ(x) = Fₘ₋₁(x) + η · hₘ(x)     p(y=1|x) = sigmoid(Fₘ(x))':'P̂(y=1|x) = (1 / M) Σₘ 𝟙[Tₘ(x) = 1]     ŷ = 𝟙[P̂ ≥ 0.5]';
+let im=model.importance,total=im[0]+im[1]||1;$('importance').innerHTML=['Feature x₁','Feature x₂'].map((n,i)=>`<div style="margin:9px 0"><div style="display:flex;justify-content:space-between;font-size:12px"><span>${n}</span><b>${(100*im[i]/total).toFixed(1)}%</b></div><div class="bar"><span style="width:${100*im[i]/total}%"></span></div></div>`).join('');
+$('insight').textContent=acc>trainAcc-.08?'Train and test scores are relatively close: the model appears to generalize reasonably on this split.':'The train/test gap suggests possible overfitting. Try shallower trees, a larger minimum split size, or more noise-robust sampling. Compare test AUC as well as accuracy.';
+drawPlot();drawTree(model.trees[0]);}
+function drawPlot(){let cv=$('plot'),ctx=cv.getContext('2d'),w=cv.width,h=cv.height,pad=42;let xs=data.length?data.map(d=>d.x[0]):[-2,2],ys=data.map(d=>d.x[1]);let minX=Math.min(-1.8,...xs)-.2,maxX=Math.max(1.8,...xs)+.2,minY=Math.min(-1.8,...ys)-.2,maxY=Math.max(1.8,...ys)+.2;let X=x=>pad+(x-minX)/(maxX-minX)*(w-2*pad),Y=y=>h-pad-(y-minY)/(maxY-minY)*(h-2*pad);
+let img=ctx.createImageData(w,h);for(let py=0;py<h;py+=2)for(let px=0;px<w;px+=2){let x=minX+(px-pad)/(w-2*pad)*(maxX-minX),y=minY+(h-pad-py)/(h-2*pad)*(maxY-minY),p=prob([x,y]);let col=p<.5?[40+45*p,165+90*p,190+70*p]:[235,150+45*(1-p),75+25*(1-p)];for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){let q=((py+dy)*w+px+dx)*4;img.data[q]=col[0];img.data[q+1]=col[1];img.data[q+2]=col[2];img.data[q+3]=105}}ctx.putImageData(img,0,0);
+ctx.strokeStyle='#8291aa';ctx.lineWidth=1;ctx.strokeRect(pad,pad,w-2*pad,h-2*pad);ctx.fillStyle='#9eacc7';ctx.font='13px sans-serif';ctx.fillText('x₁',w/2,h-8);ctx.save();ctx.translate(13,h/2);ctx.rotate(-Math.PI/2);ctx.fillText('x₂',0,0);ctx.restore();
+let testSetIds=new Set(testSet);for(let d of data){let isTest=testSet.includes(d);ctx.beginPath();ctx.arc(X(d.x[0]),Y(d.x[1]),isTest?5.2:4.2,0,Math.PI*2);ctx.fillStyle=d.y?'#ffad62':'#42c8d8';ctx.fill();if(isTest){ctx.strokeStyle='#fff';ctx.lineWidth=1.4;ctx.stroke()}}}
+function drawTree(root){let svg=$('tree');svg.innerHTML='';let ns='http://www.w3.org/2000/svg',levels=[];function collect(n,d=0){(levels[d]??=[]).push(n);if(n.left){collect(n.left,d+1);collect(n.right,d+1)}}collect(root);let positions=new Map();levels.forEach((arr,d)=>arr.forEach((n,i)=>positions.set(n,{x:450+(i-(arr.length-1)/2)*Math.min(210,600/Math.max(1,arr.length-1)),y:35+d*68})));
+function line(x1,y1,x2,y2){let e=document.createElementNS(ns,'line');e.setAttribute('x1',x1);e.setAttribute('y1',y1+17);e.setAttribute('x2',x2);e.setAttribute('y2',y2-17);e.setAttribute('class','edge');svg.append(e)}
+function visit(n){let p=positions.get(n);if(n.left){let l=positions.get(n.left),r=positions.get(n.right);line(p.x,p.y,l.x,l.y);line(p.x,p.y,r.x,r.y);visit(n.left);visit(n.right)}let g=document.createElementNS(ns,'g'),rect=document.createElementNS(ns,'rect'),txt=document.createElementNS(ns,'text');rect.setAttribute('x',p.x-54);rect.setAttribute('y',p.y-17);rect.setAttribute('width',108);rect.setAttribute('height',34);rect.setAttribute('rx',7);rect.setAttribute('class',n.left?'node':'node leaf');txt.setAttribute('x',p.x);txt.setAttribute('y',p.y+4);txt.setAttribute('class','nodetxt');txt.textContent=n.left?`x${n.f+1} ≤ ${n.t.toFixed(2)}`:`ŷ = ${n.value.toFixed(2)} · n=${n.count}`;g.append(rect,txt);svg.append(g)}visit(root)}
+function syncLabels(){for(let [id,out,fmt] of [['n','nOut',v=>v],['noise','noiseOut',v=>(+v).toFixed(2)],['split','splitOut',v=>v+'%'],['trees','treesOut',v=>v],['depth','depthOut',v=>v],['minSplit','minSplitOut',v=>v],['feat','featOut',v=>v],['sample','sampleOut',v=>v+'%'],['lr','lrOut',v=>(+v).toFixed(2)]])$(out).textContent=fmt($(id).value)}
+function update(){syncLabels();let c=cfg();data=makeData(c);train(c)}
+$('train').onclick=update;$('newData').onclick=()=>{seed+=100;update()};$('reset').onclick=()=>{Object.entries({model:'rf',dataset:'moons',n:420,noise:.18,split:75,trees:35,depth:5,minSplit:8,feat:1,sample:80,lr:.25}).forEach(([k,v])=>$(k).value=v);$('bootstrap').checked=true;$('randomThreshold').checked=false;update()};
+['model','dataset','n','noise','split','trees','depth','minSplit','feat','sample','lr','bootstrap','randomThreshold'].forEach(id=>$(id).addEventListener('change',()=>{if(id==='model'){$('modelHint').textContent=$('model').value==='boost'?'Sequential residual fitting; learning rate scales each shallow tree.':$('model').value==='extra'?'Randomized thresholds and feature subsets increase tree diversity.':$('model').value==='bag'?'Independent bootstrap trees; aggregation reduces variance.':'Bootstrap samples + random feature subsets; aggregate by majority vote.'}update()}));
+update();
+</script></body></html>
